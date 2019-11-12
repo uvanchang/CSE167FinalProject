@@ -21,14 +21,17 @@
 
 #include <stdlib.h>
 
-#include "Node.h"
-#include "Transform.h"
-#include "Geometry.h"
 #include "shader.h"
 #include "texture.h"
+
+#include "Constants.h"
 #include "Debug.h"
+#include "Geometry.h"
 #include "Math.h"
+#include "Node.h"
 #include "Skybox.h"
+#include "Track.h"
+#include "Transform.h"
 
 class Window
 {
@@ -40,11 +43,12 @@ public:
 	static std::string windowTitle;
 	static Skybox* skybox;
 	static Geometry* sphere;
+	static Track* track;
 	static glm::mat4 projection;
 	static glm::mat4 view;
 	static glm::vec3 eye, center, up;
 	static GLuint skyboxShader, skybox_projectionLoc, skybox_viewLoc, skybox_normalColoringLoc;
-	static GLuint objectShader, object_projectionLoc, object_viewLoc, object_normalColoringLoc, object_cameraPosLoc;
+	static GLuint objectShader, object_projectionLoc, object_viewLoc, object_normalColoringLoc, object_cameraPosLoc, object_reflectionLoc;
 	static int normalColoring;
 	static glm::vec3 cursor;
 	static glm::vec3 pressedPos;

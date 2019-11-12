@@ -22,7 +22,7 @@ namespace fs = std::filesystem;
 class Texture
 {
 public:
-	static GLuint loadCubemap(const char * textureFilePath)
+	static GLuint loadCubemap(std::string textureFilePath)
 	{
 		GLuint textureId;
 		glGenTextures(1, &textureId);

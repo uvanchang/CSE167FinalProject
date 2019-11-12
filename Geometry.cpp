@@ -123,16 +123,13 @@ Geometry::~Geometry() {
 	glDeleteVertexArrays(1, &vao);
 }
 
-void Geometry::setModelMatrix(glm::mat4 M) {
-	model = M;
-}
-
 void Geometry::render() {
 	glUseProgram(program);
 
 	GLuint modelLoc = glGetUniformLocation(program, "model");
-
+	GLuint colorLoc = glGetUniformLocation(program, "color");
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	glUniform3fv(colorLoc, 1, glm::value_ptr(color));
 
 	// Bind to the VAO.
 	glBindVertexArray(vao);

@@ -11,6 +11,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 #include <vector>
+#include <iostream>
 
 class Debug
 {
@@ -44,6 +45,10 @@ public:
 
 	static void printVector3(glm::vec3 V) {
 		std::cout << "(" << V.x << ", " << V.y << ", " << V.z << ")" << std::endl;
+	}
+
+	static void printVector4(glm::vec4 V) {
+		std::cout << "(" << V.x << ", " << V.y << ", " << V.z << ", " << V.w << ")" << std::endl;
 	}
 };
 

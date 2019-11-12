@@ -32,7 +32,7 @@ protected:
 	GLuint vao, ebo;
 	GLuint vbos[3];
 public:
-	Skybox(const char * textureFilePath, GLuint shaderId);
+	Skybox(std::string textureFilePath, GLuint shaderId);
 	~Skybox();
 
 	void render();

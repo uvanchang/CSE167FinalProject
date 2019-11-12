@@ -9,6 +9,7 @@ std::string Window::windowTitle = "GLFW Starter Project";
 // Objects to display.
 Skybox * Window::skybox;
 Geometry * Window::sphere;
+Track * Window::track;
 
 glm::mat4 Window::projection; // Projection matrix.
 
@@ -39,6 +40,7 @@ GLuint Window::object_projectionLoc; // Location of projection in shader.
 GLuint Window::object_viewLoc; // Location of view in shader.
 GLuint Window::object_normalColoringLoc;
 GLuint Window::object_cameraPosLoc;
+GLuint Window::object_reflectionLoc;
 
 int Window::normalColoring = 0;
 
@@ -76,6 +78,7 @@ bool Window::initializeProgram()
 	object_projectionLoc = glGetUniformLocation(objectShader, "projection");
 	object_viewLoc = glGetUniformLocation(objectShader, "view");
 	object_normalColoringLoc = glGetUniformLocation(objectShader, "normalColoring");
+	object_reflectionLoc = glGetUniformLocation(objectShader, "reflection");
 
 	Debug::checkGLError("initialize program");
 
@@ -84,13 +87,17 @@ bool Window::initializeProgram()
 
 bool Window::initializeObjects()
 {	
-	//skybox = new Skybox("C:\\Users\\kenyi\\Kenny\\UCSD\\Year 4\\CSE 167\\Project 4\\Skyboxes\\Skybox_Demo1b", skyboxShader);
-	//skybox = new Skybox("C:\\Users\\kenyi\\Kenny\\UCSD\\Year 4\\CSE 167\\Project 4\\Skyboxes\\PalldioPalace", skyboxShader);
-	skybox = new Skybox("C:\\Users\\kenyi\\Kenny\\UCSD\\Year 4\\CSE 167\\Project 4\\Skyboxes\\skybox", skyboxShader);
-	//skybox = new Skybox("C:\\Users\\kenyi\\Kenny\\UCSD\\Year 4\\CSE 167\\Project 4\\Skyboxes\\ColoredFaces", skyboxShader);
-	sphere = new Geometry("C:\\Users\\kenyi\\Kenny\\UCSD\\Year 4\\CSE 167\\Project 4\\OBJFiles\\CSE167SphereOBJ\\sphere.obj", objectShader);
+	//skybox = new Skybox(SKYBOX_DEMO, skyboxShader);
+	//skybox = new Skybox(PALACE, skyboxShader);
+	skybox = new Skybox(SKYBOX, skyboxShader);
+	//skybox = new Skybox(COLORED_FACES, skyboxShader);
+	sphere = new Geometry(SPHERE_OBJ, objectShader);
 	sphere->setTextureSampler(skybox->getTextureId());
 	sphere->setModelMatrix(glm::translate(glm::scale(sphere->getModel(), glm::vec3(1.5f, 1.5f, 1.5f)), glm::vec3(0.0f, 0.0f, 5.0f)));
+
+	track = new Track(objectShader);
+
+	Debug::checkGLError("initialize objects");
 
 	return true;
 }
@@ -100,6 +107,7 @@ void Window::cleanUp()
 	// Deallcoate the objects.
 	delete skybox;
 	delete sphere;
+	delete track;
 
 	// Delete the shader program.
 	glDeleteProgram(skyboxShader);
@@ -205,6 +213,9 @@ void Window::resizeCallback(GLFWwindow* window, int width, int height)
 void Window::idleCallback()
 {
 	sphere->update();
+	track->update();
+
+	Debug::checkGLError("update objects");
 }
 
 void Window::displayCallback(GLFWwindow* window)
@@ -212,24 +223,26 @@ void Window::displayCallback(GLFWwindow* window)
 	// Clear the color and depth buffers.
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
 
-	// Specify the values of the uniform variables we are going to use.
-	glUseProgram(skyboxShader);
-	glUniformMatrix4fv(skybox_projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-	glUniformMatrix4fv(skybox_viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-	glUniform1i(skybox_normalColoringLoc, normalColoring);
-
+	// Render objects (sphere, bezier track)
 	glUseProgram(objectShader);
 	glUniformMatrix4fv(object_projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 	glUniformMatrix4fv(object_viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	glUniform3fv(object_cameraPosLoc, 1, glm::value_ptr(eye));
 	glUniform1i(object_normalColoringLoc, normalColoring);
+	glUniform1i(object_reflectionLoc, 1); // Enable environment mapping for sphere
 
-	// Render the sphere.
-	glUseProgram(objectShader);
-	sphere->render();
+	//sphere->render();
+	
+	glUniform1i(object_reflectionLoc, 0); // Disable environment mapping for bezier track
+	
+	track->render();
 
 	// Render the skybox.
 	glUseProgram(skyboxShader);
+	glUniformMatrix4fv(skybox_projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+	glUniformMatrix4fv(skybox_viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+	glUniform1i(skybox_normalColoringLoc, normalColoring);
+
 	skybox->render();
 
 	Debug::checkGLError("render objects");

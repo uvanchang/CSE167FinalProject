@@ -5,11 +5,10 @@
 #include "Skybox.h"
 #include "Math.h"
 
-Skybox::Skybox(const char * textureFilePath, GLuint shaderId)
+Skybox::Skybox(std::string textureFilePath, GLuint shaderId)
 	: shaderId(shaderId)
 {
 	textureId = Texture::loadCubemap(textureFilePath);
-	Debug::checkGLError("loadCubemap");
 	/*
 	 * Skybox indices used below.
 	 *    4----7
@@ -105,7 +104,7 @@ Skybox::Skybox(const char * textureFilePath, GLuint shaderId)
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
 
-	// Bind to the second VBO. We will use it to store the normals.
+	// Bind to the second VBO. We will use it to store the textures.
 	glBindBuffer(GL_ARRAY_BUFFER, vbos[2]);
 	// Pass in the data.
 	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * textures.size(), textures.data(), GL_STATIC_DRAW);
@@ -138,14 +137,14 @@ void Skybox::render() {
 	glCullFace(GL_BACK);
 	//glFrontFace(GL_CW);
 
-	//glDepthMask(GL_FALSE);
+	glDepthMask(GL_FALSE);
 	// Bind to the VAO.
 	glBindVertexArray(vao);
 	// Bind the texture
 	glBindTexture(GL_TEXTURE_CUBE_MAP, textureId);
 	// Draw points 
 	glDrawElements(GL_TRIANGLES, 3 * indices.size(), GL_UNSIGNED_INT, 0);
-	//glDepthMask(GL_TRUE);
+	glDepthMask(GL_TRUE);
 	// Unbind from the VAO.
 	glBindVertexArray(0);
 }

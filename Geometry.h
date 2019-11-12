@@ -44,13 +44,14 @@ public:
 
 	void parseOBJ(std::string objFilename);
 
-	void setModelMatrix(glm::mat4 M);
 	void render();
 	void draw(glm::mat4 C);
 	void update();
 
+	void setModelMatrix(glm::mat4 M) { this->model = M; };
 	void setOffsets(std::vector<glm::vec3> offsets) { this->offsets = offsets; }
 	void setMaterial(Material material) { this->material = material; }
+	void setColor(glm::vec3 color) { this->color = color; }
 	void toggleRender(int toRender) { this->toRender = toRender; }
 	void setTextureSampler(GLuint textureId) { this->textureId = textureId; }
 
