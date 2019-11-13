@@ -212,7 +212,7 @@ void Window::resizeCallback(GLFWwindow* window, int width, int height)
 
 void Window::idleCallback()
 {
-	sphere->update();
+	//sphere->update();
 	track->update();
 
 	Debug::checkGLError("update objects");
@@ -325,6 +325,30 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 			break;
 		case GLFW_KEY_N:
 			normalColoring = !normalColoring;
+			break;
+		case GLFW_KEY_X:
+			if (mods == GLFW_MOD_SHIFT)
+				track->shiftCurrentControlPoint(glm::vec3(-1.0f, 0.0f, 0.0f));
+			else
+				track->shiftCurrentControlPoint(glm::vec3(1.0f, 0.0f, 0.0f));
+			break;
+		case GLFW_KEY_Y:
+			if (mods == GLFW_MOD_SHIFT)
+				track->shiftCurrentControlPoint(glm::vec3(0.0f, -1.0f, 0.0f));
+			else
+				track->shiftCurrentControlPoint(glm::vec3(0.0f, 1.0f, 0.0f));
+			break;
+		case GLFW_KEY_Z:
+			if (mods == GLFW_MOD_SHIFT)
+				track->shiftCurrentControlPoint(glm::vec3(0.0f, 0.0f, -1.0f));
+			else
+				track->shiftCurrentControlPoint(glm::vec3(0.0f, 0.0f, 1.0f));
+			break;
+		case GLFW_KEY_Q:
+			track->changeCurrentControlPoint(false);
+			break;
+		case GLFW_KEY_W:
+			track->changeCurrentControlPoint(true);
 			break;
 		default:
 			break;

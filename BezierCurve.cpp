@@ -21,13 +21,18 @@ void BezierCurve::setControlPoints(glm::vec3 controlPoints[4])
 
 	float control_points[16] = // Column major
 	{
-
 		p0.x, p0.y, p0.z, 0,
 		p1.x, p1.y, p1.z, 0,
 		p2.x, p2.y, p2.z, 0,
 		p3.x, p3.y, p3.z, 0,
 	};
 	Gbez = glm::make_mat4(control_points);
+	C = Gbez * Bbez;
+}
+
+void BezierCurve::updateControlPoint(int index, glm::vec3 controlPoint)
+{
+	Gbez[index] = glm::vec4(controlPoint, 0.0f);
 	C = Gbez * Bbez;
 }
 

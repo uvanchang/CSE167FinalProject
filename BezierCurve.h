@@ -36,6 +36,8 @@ public:
 	void setControlPoints(glm::vec3 controlPoints[4]);
 	void setBasisVectors();
 
+	void updateControlPoint(int index, glm::vec3 controlPoint);
+
 	glm::vec3 parametricCurve(float t);
 	glm::vec3 getPoint(float t);
 

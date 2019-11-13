@@ -135,7 +135,6 @@ void Skybox::render() {
 	
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
-	//glFrontFace(GL_CW);
 
 	glDepthMask(GL_FALSE);
 	// Bind to the VAO.
