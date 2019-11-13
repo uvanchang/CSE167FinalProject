@@ -39,6 +39,7 @@ public:
 	static int width;
 	static int height;
 	static double fov;
+	static double oldTime, distance;
 	static float currX, currY, lastX, lastY, pitch, yaw;
 	static std::string windowTitle;
 	static Skybox* skybox;

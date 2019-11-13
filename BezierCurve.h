@@ -39,7 +39,7 @@ public:
 	void updateControlPoint(int index, glm::vec3 controlPoint);
 
 	glm::vec3 parametricCurve(float t);
-	glm::vec3 getPoint(float t);
+	glm::vec3 getPoint(int t) { return points[t]; };
 
 	void render();
 	void update();

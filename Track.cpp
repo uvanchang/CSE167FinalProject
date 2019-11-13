@@ -1,19 +1,19 @@
 #include "Track.h"
 
-Track::Track(GLuint shader)
+Track::Track(GLuint shader, glm::vec3 center, float radius)
 	: program(shader)
 {
 	float offset = 360.0f / (8 * 3);
 	for (unsigned int i = 0; i < 8; ++i) {
-		// Compute locations of 4 control points for the bezier curve segment (3rd order)
 		float angle = i * offset * 3;
-		float radius = 10; 
-		glm::vec3 p0 = glm::vec3(radius * cos(glm::radians(angle)), 2.0f, radius * sin(glm::radians(angle)));
-		glm::vec3 p3 = glm::vec3(radius * cos(glm::radians(angle + 3 * offset)), 2.0f, radius * sin(glm::radians(angle + 3 * offset)));
+		// Compute locations of 4 control points for the bezier curve segment (3rd order)
+
+		glm::vec3 p0 = glm::vec3(radius * cos(glm::radians(angle)) + center.x, 2.0f + center.y, radius * sin(glm::radians(angle)) + center.z);
+		glm::vec3 p3 = glm::vec3(radius * cos(glm::radians(angle + 3 * offset)) + center.x, 2.0f + center.y, radius * sin(glm::radians(angle + 3 * offset)) + center.z);
 		glm::vec2 pointOnP0Tangent = Math::pointOnTangent(angle, radius, 2, true);
 		glm::vec2 pointOnP3Tangent = Math::pointOnTangent(angle + 3 * offset, radius, 2, false);
-		glm::vec3 p1 = glm::vec3(pointOnP0Tangent.x, 0.0f, pointOnP0Tangent.y);
-		glm::vec3 p2 = glm::vec3(pointOnP3Tangent.x, 4.0f, pointOnP3Tangent.y);
+		glm::vec3 p1 = glm::vec3(pointOnP0Tangent.x + center.x, 0.0f + center.y, pointOnP0Tangent.y + center.z);
+		glm::vec3 p2 = glm::vec3(pointOnP3Tangent.x + center.x, 4.0f + center.y, pointOnP3Tangent.y + center.z);
 		glm::vec3 controlPoints[4] = {p0, p1, p2, p3};
 
 		// Create curve

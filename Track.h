@@ -73,13 +73,14 @@ protected:
 	GLuint program;
 	GLuint vao, vbo;
 public:
-	Track(GLuint shader);
+	Track(GLuint shader, glm::vec3 center, float radius);
 	~Track();
 
 	void changeCurrentControlPoint(bool right);
 	void shiftCurrentControlPoint(glm::vec3 translation);
 
 	ControlPoint* getCurrentControlPoint() { return currentControlPoint; }
+	BezierCurve* getCurve(int curveIndex) { return curves[curveIndex]; }
 
 	void render();
 	void update();

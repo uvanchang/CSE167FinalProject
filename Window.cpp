@@ -11,6 +11,9 @@ Skybox * Window::skybox;
 Geometry * Window::sphere;
 Track * Window::track;
 
+double Window::oldTime;
+double Window::distance;
+
 glm::mat4 Window::projection; // Projection matrix.
 
 // camera
@@ -91,11 +94,14 @@ bool Window::initializeObjects()
 	//skybox = new Skybox(PALACE, skyboxShader);
 	skybox = new Skybox(SKYBOX, skyboxShader);
 	//skybox = new Skybox(COLORED_FACES, skyboxShader);
+
+	// Bezier track
+	track = new Track(objectShader, glm::vec3(0.0f, -5.0f, 20.0f), 10.0f);
+
 	sphere = new Geometry(SPHERE_OBJ, objectShader);
 	sphere->setTextureSampler(skybox->getTextureId());
-	sphere->setModelMatrix(glm::translate(glm::scale(sphere->getModel(), glm::vec3(1.5f, 1.5f, 1.5f)), glm::vec3(0.0f, 0.0f, 5.0f)));
-
-	track = new Track(objectShader);
+	sphere->setModelMatrix(glm::translate(sphere->getModel(), track->getCurrentControlPoint()->getCoordinates()));
+	sphere->setModelMatrix(glm::scale(sphere->getModel(), glm::vec3(0.5f, 0.5f, 0.5f)));
 
 	Debug::checkGLError("initialize objects");
 
@@ -211,8 +217,19 @@ void Window::resizeCallback(GLFWwindow* window, int width, int height)
 }
 
 void Window::idleCallback()
-{
-	//sphere->update();
+{	
+	// Sphere movement
+	double speed = 200;
+	double time = glfwGetTime();
+	double delta_time = time - oldTime;
+	oldTime = time;
+	distance += speed * delta_time;
+	int curveIndex = (int(distance) / 150) % 8;
+	int pointIndex = int(distance) % 150;
+	glm::vec3 point = track->getCurve(curveIndex)->getPoint(pointIndex);
+	sphere->setModelMatrix(glm::translate(glm::mat4(1.0f), point));
+
+	sphere->update();
 	track->update();
 
 	Debug::checkGLError("update objects");
@@ -231,7 +248,7 @@ void Window::displayCallback(GLFWwindow* window)
 	glUniform1i(object_normalColoringLoc, normalColoring);
 	glUniform1i(object_reflectionLoc, 1); // Enable environment mapping for sphere
 
-	//sphere->render();
+	sphere->render();
 	
 	glUniform1i(object_reflectionLoc, 0); // Disable environment mapping for bezier track
 	

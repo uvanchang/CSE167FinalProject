@@ -54,15 +54,10 @@ glm::vec3 BezierCurve::parametricCurve(float t)
 	return C * T;
 }
 
-glm::vec3 BezierCurve::getPoint(float t)
-{
-	return parametricCurve(t);
-}
-
 void BezierCurve::update()
 {
 	for (unsigned int i = 0; i < 150; ++i) {
-		points[i] = getPoint(i/149.0f);
+		points[i] = parametricCurve(i/149.0f);
 	}
 
 	glGenVertexArrays(1, &vao);
