@@ -59,6 +59,7 @@ void BezierCurve::update()
 	for (unsigned int i = 0; i < 150; ++i) {
 		points[i] = parametricCurve(i/149.0f);
 	}
+	length = 150 * glm::length(points[75] - points[74]);
 
 	glGenVertexArrays(1, &vao);
 	glGenBuffers(1, &vbo);

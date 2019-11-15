@@ -13,6 +13,9 @@ Track * Window::track;
 
 double Window::oldTime;
 double Window::distance;
+unsigned int Window::curveIndex = 0;
+unsigned int Window::pointIndex = 0;
+bool Window::pauseTrack = false;
 
 glm::mat4 Window::projection; // Projection matrix.
 
@@ -219,15 +222,18 @@ void Window::resizeCallback(GLFWwindow* window, int width, int height)
 void Window::idleCallback()
 {	
 	// Sphere movement
-	double speed = 200;
+	double speed = 700;
 	double time = glfwGetTime();
 	double delta_time = time - oldTime;
 	oldTime = time;
-	distance += speed * delta_time;
-	int curveIndex = (int(distance) / 150) % 8;
-	int pointIndex = int(distance) % 150;
+	float curveLength = track->getCurve(curveIndex)->getLength();
+	if (!pauseTrack) {
+		distance += speed * delta_time / curveLength;
+	}
+	curveIndex = (int(distance) / 150) % 8;
+	pointIndex = int(distance) % 150;
 	glm::vec3 point = track->getCurve(curveIndex)->getPoint(pointIndex);
-	sphere->setModelMatrix(glm::translate(glm::mat4(1.0f), point));
+	sphere->setModelMatrix(glm::translate(glm::mat4(1.0f), point));	
 
 	sphere->update();
 	track->update();
@@ -367,6 +373,9 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 		case GLFW_KEY_W:
 			track->changeCurrentControlPoint(true);
 			break;
+		case GLFW_KEY_P:
+			pauseTrack = !pauseTrack;
+			break;
 		default:
 			break;
 		}
@@ -391,7 +400,7 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 		eye = eye + glm::vec3(1.0f, 0.0f, 0.0f);
 		view = glm::lookAt(eye, center, up);
 		break;
-	case GLFW_KEY_P:
+	case GLFW_KEY_O:
 		// Adjust fov
 		if (mods == GLFW_MOD_SHIFT) {
 			// Zoom in

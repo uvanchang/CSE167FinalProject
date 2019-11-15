@@ -114,6 +114,8 @@ void Track::shiftCurrentControlPoint(glm::vec3 translation)
 		glm::vec3 newLeftCoords1 = currentControlPoint->getLeft()->translateCoordinates(translation * 0.5f);
 		curves[currentCurveIndex]->updateControlPoint(0, newLeftCoords1);
 		curves[prevCurveIndex]->updateControlPoint(3, newLeftCoords1);
+		// glm::vec3 newLeftCoords2 = currentControlPoint->getLeft()->getLeft()->translateCoordinates(translation * -1.0f);
+		// curves[prevCurveIndex]->updateControlPoint(2, newLeftCoords1);
 	}
 	// Left tangent point 
 	else if (currentCurvePointIndex == 2) {
@@ -121,6 +123,8 @@ void Track::shiftCurrentControlPoint(glm::vec3 translation)
 		glm::vec3 newRightCoords1 = currentControlPoint->getRight()->translateCoordinates(translation * 0.5f);
 		curves[currentCurveIndex]->updateControlPoint(3, newRightCoords1);
 		curves[nextCurveIndex]->updateControlPoint(0, newRightCoords1);
+		// glm::vec3 newRightCoords2 = currentControlPoint->getRight()->getRight()->translateCoordinates(translation * -1.0f);
+		// curves[nextCurveIndex]->updateControlPoint(1, newRightCoords1);
 	}
 	// Anchor point
 	else {

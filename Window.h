@@ -40,6 +40,8 @@ public:
 	static int height;
 	static double fov;
 	static double oldTime, distance;
+	static unsigned int curveIndex, pointIndex;
+	static bool pauseTrack;
 	static float currX, currY, lastX, lastY, pitch, yaw;
 	static std::string windowTitle;
 	static Skybox* skybox;

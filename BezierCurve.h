@@ -17,6 +17,7 @@
 #include "Geometry.h"
 #include "Constants.h"
 #include "Debug.h"
+#include "Math.h"
 
 class BezierCurve
 {
@@ -25,6 +26,7 @@ protected:;
  	glm::mat4 Bbez; // geometry basis
  	glm::mat4 C; // Gbez * Bbez
 
+ 	float length = 1;
 	glm::vec3 points[150];
 	std::vector<unsigned int> indices;
 	GLuint program;
@@ -40,6 +42,7 @@ public:
 
 	glm::vec3 parametricCurve(float t);
 	glm::vec3 getPoint(int t) { return points[t]; };
+	float getLength() { return length; }
 
 	void render();
 	void update();
