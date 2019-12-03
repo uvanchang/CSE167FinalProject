@@ -48,6 +48,9 @@ GLuint Window::object_normalColoringLoc;
 GLuint Window::object_cameraPosLoc;
 GLuint Window::object_reflectionLoc;
 
+GLuint Window::terrain_projectionLoc; // Location of projection in shader.
+GLuint Window::terrain_viewLoc; // Location of view in shader.
+
 int Window::normalColoring = 0;
 
 glm::vec3 Window::cursor(0, 0, 0); // 3-D position of cursor
@@ -59,6 +62,7 @@ bool Window::initializeProgram()
 	// Create a shader program with a vertex shader and a fragment shader.
 	skyboxShader = LoadShaders("shaders/skybox.vert", "shaders/skybox.frag");
 	objectShader = LoadShaders("shaders/shader.vert", "shaders/shader.frag");
+	terrainShader = LoadShaders("shaders/terrainShader.vert", "shaders/terrainShader.frag");
 	Debug::checkGLError("load shaders");
 
 	// Check the shader program.
@@ -70,6 +74,11 @@ bool Window::initializeProgram()
 	if (!objectShader)
 	{
 		std::cerr << "Failed to initialize object shader" << std::endl;
+		return false;
+	}
+	if (!terrainShader)
+	{
+		std::cerr << "Failed to initialize terrain shader" << std::endl;
 		return false;
 	}
 
@@ -86,6 +95,10 @@ bool Window::initializeProgram()
 	object_normalColoringLoc = glGetUniformLocation(objectShader, "normalColoring");
 	object_reflectionLoc = glGetUniformLocation(objectShader, "reflection");
 
+	glUseProgram(terrainShader);
+	terrain_projectionLoc = glGetUniformLocation(terrainShader, "projection");
+	terrain_viewLoc = glGetUniformLocation(terrainShader, "view");
+
 	Debug::checkGLError("initialize program");
 
 	return true;
@@ -98,13 +111,12 @@ bool Window::initializeObjects()
 	skybox = new Skybox(SKYBOX, skyboxShader);
 	//skybox = new Skybox(COLORED_FACES, skyboxShader);
 
-	// Bezier track
-	track = new Track(objectShader, glm::vec3(0.0f, -5.0f, 20.0f), 10.0f);
+	// sphere = new Geometry(SPHERE_OBJ, objectShader);
+	// sphere->setTextureSampler(skybox->getTextureId());
+	// sphere->setModelMatrix(glm::translate(sphere->getModel(), track->getCurrentControlPoint()->getCoordinates()));
+	// sphere->setModelMatrix(glm::scale(sphere->getModel(), glm::vec3(0.5f, 0.5f, 0.5f)));
 
-	sphere = new Geometry(SPHERE_OBJ, objectShader);
-	sphere->setTextureSampler(skybox->getTextureId());
-	sphere->setModelMatrix(glm::translate(sphere->getModel(), track->getCurrentControlPoint()->getCoordinates()));
-	sphere->setModelMatrix(glm::scale(sphere->getModel(), glm::vec3(0.5f, 0.5f, 0.5f)));
+	terrain = new Terrain(5, terrainShader);
 
 	Debug::checkGLError("initialize objects");
 
@@ -116,11 +128,12 @@ void Window::cleanUp()
 	// Deallcoate the objects.
 	delete skybox;
 	delete sphere;
-	delete track;
+	delete terrain;
 
 	// Delete the shader program.
 	glDeleteProgram(skyboxShader);
 	glDeleteProgram(objectShader);
+	glDeleteProgram(terrainShader);
 }
 
 GLFWwindow* Window::createWindow(int width, int height)
@@ -221,24 +234,24 @@ void Window::resizeCallback(GLFWwindow* window, int width, int height)
 
 void Window::idleCallback()
 {	
-	// Sphere movement
-	double speed = 700;
-	double time = glfwGetTime();
-	double delta_time = time - oldTime;
-	oldTime = time;
-	float curveLength = track->getCurve(curveIndex)->getLength();
-	if (!pauseTrack) {
-		distance += speed * delta_time / curveLength;
-	}
-	curveIndex = (int(distance) / 150) % 8;
-	pointIndex = int(distance) % 150;
-	glm::vec3 point = track->getCurve(curveIndex)->getPoint(pointIndex);
-	sphere->setModelMatrix(glm::translate(glm::mat4(1.0f), point));	
+	// // Sphere movement
+	// double speed = 700;
+	// double time = glfwGetTime();
+	// double delta_time = time - oldTime;
+	// oldTime = time;
+	// float curveLength = track->getCurve(curveIndex)->getLength();
+	// if (!pauseTrack) {
+	// 	distance += speed * delta_time / curveLength;
+	// }
+	// curveIndex = (int(distance) / 150) % 8;
+	// pointIndex = int(distance) % 150;
+	// glm::vec3 point = track->getCurve(curveIndex)->getPoint(pointIndex);
+	// sphere->setModelMatrix(glm::translate(glm::mat4(1.0f), point));	
 
-	sphere->update();
-	track->update();
+	// sphere->update();
+	// track->update();
 
-	Debug::checkGLError("update objects");
+	// Debug::checkGLError("update objects");
 }
 
 void Window::displayCallback(GLFWwindow* window)
@@ -246,19 +259,26 @@ void Window::displayCallback(GLFWwindow* window)
 	// Clear the color and depth buffers.
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
 
-	// Render objects (sphere, bezier track)
-	glUseProgram(objectShader);
-	glUniformMatrix4fv(object_projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-	glUniformMatrix4fv(object_viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-	glUniform3fv(object_cameraPosLoc, 1, glm::value_ptr(eye));
-	glUniform1i(object_normalColoringLoc, normalColoring);
-	glUniform1i(object_reflectionLoc, 1); // Enable environment mapping for sphere
+	// // Render objects (sphere, bezier track)
+	// glUseProgram(objectShader);
+	// glUniformMatrix4fv(object_projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+	// glUniformMatrix4fv(object_viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+	// glUniform3fv(object_cameraPosLoc, 1, glm::value_ptr(eye));
+	// glUniform1i(object_normalColoringLoc, normalColoring);
+	// glUniform1i(object_reflectionLoc, 1); // Enable environment mapping for sphere
 
-	sphere->render();
+	// sphere->render();
 	
-	glUniform1i(object_reflectionLoc, 0); // Disable environment mapping for bezier track
+	// glUniform1i(object_reflectionLoc, 0); // Disable environment mapping for bezier track
 	
-	track->render();
+	// track->render();
+
+	// Render the terrain.
+	glUseProgram(terrainShader);
+	glUniformMatrix4fv(terrain_projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+	glUniformMatrix4fv(terrain_viewLoc, 1, GL_FALSE, glm::value_ptr(view));	
+
+	terrain->render();
 
 	// Render the skybox.
 	glUseProgram(skyboxShader);
@@ -348,33 +368,6 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 			break;
 		case GLFW_KEY_N:
 			normalColoring = !normalColoring;
-			break;
-		case GLFW_KEY_X:
-			if (mods == GLFW_MOD_SHIFT)
-				track->shiftCurrentControlPoint(glm::vec3(-1.0f, 0.0f, 0.0f));
-			else
-				track->shiftCurrentControlPoint(glm::vec3(1.0f, 0.0f, 0.0f));
-			break;
-		case GLFW_KEY_Y:
-			if (mods == GLFW_MOD_SHIFT)
-				track->shiftCurrentControlPoint(glm::vec3(0.0f, -1.0f, 0.0f));
-			else
-				track->shiftCurrentControlPoint(glm::vec3(0.0f, 1.0f, 0.0f));
-			break;
-		case GLFW_KEY_Z:
-			if (mods == GLFW_MOD_SHIFT)
-				track->shiftCurrentControlPoint(glm::vec3(0.0f, 0.0f, -1.0f));
-			else
-				track->shiftCurrentControlPoint(glm::vec3(0.0f, 0.0f, 1.0f));
-			break;
-		case GLFW_KEY_Q:
-			track->changeCurrentControlPoint(false);
-			break;
-		case GLFW_KEY_W:
-			track->changeCurrentControlPoint(true);
-			break;
-		case GLFW_KEY_P:
-			pauseTrack = !pauseTrack;
 			break;
 		default:
 			break;

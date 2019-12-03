@@ -30,8 +30,8 @@
 #include "Math.h"
 #include "Node.h"
 #include "Skybox.h"
-#include "Track.h"
 #include "Transform.h"
+#include "Terrain.h"
 
 class Window
 {
@@ -46,12 +46,13 @@ public:
 	static std::string windowTitle;
 	static Skybox* skybox;
 	static Geometry* sphere;
-	static Track* track;
+	static Terrain* terrain;
 	static glm::mat4 projection;
 	static glm::mat4 view;
 	static glm::vec3 eye, center, up;
 	static GLuint skyboxShader, skybox_projectionLoc, skybox_viewLoc, skybox_normalColoringLoc;
 	static GLuint objectShader, object_projectionLoc, object_viewLoc, object_normalColoringLoc, object_cameraPosLoc, object_reflectionLoc;
+	static GLuint terrain_projectionLoc, terrain_viewLoc;
 	static int normalColoring;
 	static glm::vec3 cursor;
 	static glm::vec3 pressedPos;
