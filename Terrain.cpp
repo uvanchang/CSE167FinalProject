@@ -1,26 +1,28 @@
 #include "Terrain.h"
 
-void Terrain::Terrain(int n, GLuint shader)
+Terrain::Terrain(int n, GLuint shader)
 	: shader(shader)
 {
-	int length = 2 * n + 1;
-	terrain = std::vector<std::vector<int>>(length, vector<int> (length, 0));
-	std::vector<std::pair<int, int> cornerPoints> = {
+    textureId = Texture::loadTexture("textures/tough_grass.jpg");
+    
+    int length = pow(2, n) + 1;
+    terrain = std::vector<std::vector<int>>(length, std::vector<int> (length, 0));
+	std::vector<std::pair<int, int>> cornerPoints = {
 		std::make_pair(0, 0), 
 		std::make_pair(0, length-1), 
 		std::make_pair(length-1, 0), 
 		std::make_pair(length-1, length-1)
 	};
-
+    
 	// Initialize corner values
-	terrain[0][0] = 5;
-	terrain[0][length-1] = 5;
-	terrain[length-1][0] = 5;
+	terrain[0][0] = 3;
+	terrain[0][length-1] = 3;
+	terrain[length-1][0] = 2;
 	terrain[length-1][length-1] = 5;
-
+    
 	// Initialize terrain values
 	diamondSquare(n, cornerPoints);
-
+    
 	// Initialize gl points
 	for (int y = 0; y < terrain.size() - 1; ++y) {
 		for (int x = 0; x < terrain[0].size() - 1; ++x) {
@@ -28,49 +30,87 @@ void Terrain::Terrain(int n, GLuint shader)
 			points.push_back(glm::vec3(x, terrain[y][x], y));
 			points.push_back(glm::vec3(x, terrain[y+1][x], y+1));
 			points.push_back(glm::vec3(x+1, terrain[y][x+1], y));
+            textures.push_back(glm::vec2(0.0f, 1.0f));
+            textures.push_back(glm::vec2(0.0f, 0.0f));
+            textures.push_back(glm::vec2(1.0f, 1.0f));
+            glm::vec3 v1 = glm::vec3(x, terrain[y+1][x], y+1) - glm::vec3(x, terrain[y][x], y);
+            glm::vec3 v2 = glm::vec3(x+1, terrain[y][x+1], y) - glm::vec3(x, terrain[y][x], y);
+            normals.push_back(glm::cross(v1, v2));
 
 			// Triangle 2 (counter clockwise)
 			points.push_back(glm::vec3(x+1, terrain[y][x+1], y));
 			points.push_back(glm::vec3(x, terrain[y+1][x], y+1));
 			points.push_back(glm::vec3(x+1, terrain[y+1][x+1], y+1));
+            textures.push_back(glm::vec2(1.0f, 1.0f));
+            textures.push_back(glm::vec2(0.0f, 0.0f));
+            textures.push_back(glm::vec2(1.0f, 0.0f));
+            v1 = glm::vec3(x, terrain[y+1][x], y+1) - glm::vec3(x+1, terrain[y][x+1], y);
+            v2 = glm::vec3(x+1, terrain[y+1][x+1], y+1) - glm::vec3(x+1, terrain[y][x+1], y);
+            normals.push_back(glm::cross(v1, v2));
 		}
 	}
+    
+    float offset = terrain.size() / 2.0f;
+    
+    // Shift the entire model to the center of the coordinate system
+    for (unsigned int i = 0; i < points.size(); ++i) {
+        points[i].x -= offset;
+        points[i].z -= offset;
+        points[i].x *= scale;
+        points[i].z *= scale;
+    }
 
 	// Set the model matrix to an identity matrix. 
-	model = glm::mat4(1);
+    model = glm::mat4(1);//glm::translate(glm::vec3(terrain.size() / 2, 0, terrain.size() / 2));
 	// Set the color. 
 	color = glm::vec3(1, 0, 0);
 
 	// Generate a vertex array (VAO) and a vertex buffer objects (VBO).
 	glGenVertexArrays(1, &vao);
-	glGenBuffers(1, &vbo);
+	glGenBuffers(2, vbos);
 
 	// Bind to the VAO.
 	glBindVertexArray(vao);
 
 	// Bind to the first VBO. We will use it to store the points.
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbos[0]);
 	// Pass in the data.
 	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * points.size(), points.data(), GL_STATIC_DRAW);
 	// Enable vertex attribute 0. (Connect to shader) 
 	// We will be able to access points through it.
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, vbos[1]);
+    // Pass in the data.
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * textures.size(), textures.data(), GL_STATIC_DRAW);
+    // Enable vertex attribute 1. (Connect to shader)
+    // We will be able to access normals through it.
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
 
 	// Unbind from the VBO.
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	// Unbind from the VAO.
 	glBindVertexArray(0);
+    
+    std::cout << "Terrain initialized" << std::endl;
 }
 
-float avgPlusRandom(std::vector<std::pair<int, int>> cornerPoints) {
+Terrain::~Terrain() {
+    // Delete the VBO and the VAO.
+    glDeleteBuffers(2, vbos);
+    glDeleteVertexArrays(1, &vao);
+}
+
+float Terrain::avgPlusRandom(std::vector<std::pair<int, int>> cornerPoints, int n) {
 
 	float sum = 0;
-	for (std::pair p : cornerPoints) {
+	for (std::pair<int, int> p : cornerPoints) {
 		sum += terrain[p.first][p.second];
 	}
-	float randomNumber = (std::rand() % 100) / 100;
-	randomNumber = std::rand() % 2 ? -randomNumber : randomNumber; // negative if odd
+	float randomNumber = n + (std::rand() % 10) / 10.0f;
+	//randomNumber = std::rand() % 2 ? -randomNumber : randomNumber; // negative if odd
 	return sum / cornerPoints.size() + randomNumber;
 
 }
@@ -86,7 +126,7 @@ void Terrain::diamondSquare(int n, std::vector<std::pair<int, int>> cornerPoints
 	int distance = (cornerPoints[1].second - cornerPoints[0].second) / 2;
 	int x = distance + cornerPoints[0].second;
 	int y = distance + cornerPoints[0].first;
-	terrain[y][x] = avgPlusRandom(cornerPoints);
+	terrain[y][x] = avgPlusRandom(cornerPoints, n);
 
 	std::vector<std::pair<int, int>> diamondMidpoints = { // Clock-wise from top
 		std::make_pair(y - distance, x),
@@ -96,7 +136,7 @@ void Terrain::diamondSquare(int n, std::vector<std::pair<int, int>> cornerPoints
 	};
 
 	// Square step
-	for (std::pair p : diamondMidpoints) {
+	for (std::pair<int, int> p : diamondMidpoints) {
 		std::vector<std::pair<int, int>> diamondCorners;
 		if (p.first - distance >= 0) {
 			diamondCorners.push_back(std::make_pair(p.first - distance, p.second));
@@ -110,7 +150,7 @@ void Terrain::diamondSquare(int n, std::vector<std::pair<int, int>> cornerPoints
 		if (p.second - distance >= 0) {
 			diamondCorners.push_back(std::make_pair(p.first, p.second - distance));
 		}
-		terrain[p.first][p.second] = avgPlusRandom(diamondCorners);
+		terrain[p.first][p.second] = avgPlusRandom(diamondCorners, n);
 	}
 
 	// Recursive step
@@ -132,22 +172,49 @@ void Terrain::diamondSquare(int n, std::vector<std::pair<int, int>> cornerPoints
 }
 
 void Terrain::render() {
-	glUseProgram(program);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+	glUseProgram(shader);
 
-	GLuint modelLoc = glGetUniformLocation(program, "model");
-	GLuint colorLoc = glGetUniformLocation(program, "color");
+	GLuint modelLoc = glGetUniformLocation(shader, "model");
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-	glUniform3fv(colorLoc, 1, glm::value_ptr(color));
 
 	// Bind to the VAO.
 	glBindVertexArray(vao);
-	if (textureId) {
-		// Bind the texture
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, textureId);
-	}
-	// Draw points 
+    glBindTexture(GL_TEXTURE_2D, textureId);
+    
+	// Draw points
 	glDrawArrays(GL_TRIANGLES, 0, points.size() * 3);
 	// Unbind from the VAO.
 	glBindVertexArray(0);
+}
+
+float Terrain::getTerrainHeight(float x, float z) {
+    
+    float terrainX = x + scale * terrain.size() / 2.0f;
+    float terrainZ = z + scale * terrain.size() / 2.0f;
+    
+    float scaleX = terrainX / scale;
+    float scaleZ = terrainZ / scale;
+    
+    float row = ceil(scaleZ) -  scaleZ;
+    float col = scaleX - floor(scaleX);
+    
+    glm::vec3 v1, v2, v3;
+    if (col < row) { // upper triangle
+        v1 = glm::vec3(floor(scaleX), terrain[floor(scaleZ)][floor(scaleX)], floor(scaleZ));
+    } else {         // lower triangle
+        v1 = glm::vec3(ceil(scaleX), terrain[ceil(scaleZ)][ceil(scaleX)], ceil(scaleZ));
+    }
+    v2 = glm::vec3(ceil(scaleX), terrain[floor(scaleZ)][ceil(scaleX)], floor(scaleZ));
+    v3 = glm::vec3(floor(scaleX), terrain[ceil(scaleZ)][floor(scaleX)], ceil(scaleZ));
+    
+    float det = (v2.z - v3.z) * (v1.x - v3.x) + (v3.x - v2.x) * (v1.z - v3.z);
+    
+    float l1 = ((v2.z - v3.z) * (scaleX - v3.x) + (v3.x - v2.x) * (scaleZ - v3.z)) / det;
+    float l2 = ((v3.z - v1.z) * (scaleX - v3.x) + (v1.x - v3.x) * (scaleZ - v3.z)) / det;
+    float l3 = 1.0f - l1 - l2;
+    
+    return l1 * v1.y + l2 * v2.y + l3 * v3.y;
+    
 }

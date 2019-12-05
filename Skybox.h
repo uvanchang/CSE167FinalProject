@@ -2,43 +2,30 @@
 #define _SKYBOX_H_
 
 #ifdef __APPLE__
+#define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl3.h>
 #else
 #include <GL/glew.h>
 #endif
 
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/transform.hpp>
-
-#include <vector>
-#include <algorithm> 
-#include <fstream>
+#include <string>
+#include <sstream>
 #include <iostream>
-
-#include "shader.h"
-#include "texture.h"
-#include "Debug.h"
+#include <fstream>
+#include <vector>
 
 class Skybox
 {
-protected:
-	std::vector<glm::vec3> points;
-	std::vector<glm::vec3> normals;
-	std::vector<glm::vec3> textures;
-	std::vector<glm::ivec3> indices;
-	GLuint shaderId;
-	GLuint textureId;
-	GLuint vao, ebo;
-	GLuint vbos[3];
+private:
+    GLuint vao;
+    GLuint vbo;
+    GLuint shader;
 public:
-	Skybox(std::string textureFilePath, GLuint shaderId);
-	~Skybox();
-
-	void render();
-	void update();
-
-	GLuint getTextureId() { return textureId; }
+    Skybox(std::vector<std::string> facesFilenames, GLuint shader);
+    ~Skybox();
+    void render();
+    void update();
+    static GLuint cubemapTexture;
 };
 
 #endif

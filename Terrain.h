@@ -11,8 +11,11 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/transform.hpp>
 #include <vector>
+#include <math.h>
 
+#include "Debug.h"
 #include "shader.h"
+#include "texture.h"
 
 class Terrain
 {
@@ -24,18 +27,23 @@ protected:
 	std::vector<glm::vec2> textures;
 	std::vector<unsigned int> indices;
 	GLuint shader;
+    GLuint textureId;
 	GLuint vao;
-	GLuint vbo;
+	GLuint vbos[2];
 	std::vector<std::vector<int>> terrain;
+    int scale = 5;
 public:
 	Terrain(int n, GLuint shader);
 	~Terrain();
+    void diamondSquare(int n, std::vector<std::pair<int, int>> cornerPoints);
+    float avgPlusRandom(std::vector<std::pair<int, int>> cornerPoints, int n);
 
 	void render();
 	void update();
 
 	glm::mat4 getModel() { return model; }
 	glm::vec3 getColor() { return color; }
+    float getTerrainHeight(float x, float z);
 };
 
 #endif

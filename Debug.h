@@ -6,7 +6,6 @@
 #else
 #include <GL/glew.h>
 #endif
-#include <GL/GLU.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
@@ -16,14 +15,6 @@
 class Debug
 {
 public:
-	static void checkGLError(const char* msg) {
-		const GLenum err = glGetError();
-		if(err != GL_NO_ERROR) {
-			const char* str= (const char*)gluErrorString(err);
-			std::cerr<< "OpenGL error: " << msg << ", " << str << std::endl;
-		}
-	}
-
 	static void printMatrix4(glm::mat4 M) {
 		const float * flattened = (const float *)glm::value_ptr(M);
 		std::cout << "[ " << std::endl;

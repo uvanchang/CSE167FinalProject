@@ -24,7 +24,6 @@
 #include "shader.h"
 #include "texture.h"
 
-#include "Constants.h"
 #include "Debug.h"
 #include "Geometry.h"
 #include "Math.h"
@@ -42,7 +41,7 @@ public:
 	static double oldTime, distance;
 	static unsigned int curveIndex, pointIndex;
 	static bool pauseTrack;
-	static float currX, currY, lastX, lastY, pitch, yaw;
+    static float currX, currY, lastX, lastY, pitch, yaw;
 	static std::string windowTitle;
 	static Skybox* skybox;
 	static Geometry* sphere;
@@ -50,10 +49,9 @@ public:
 	static glm::mat4 projection;
 	static glm::mat4 view;
 	static glm::vec3 eye, center, up;
-	static GLuint skyboxShader, skybox_projectionLoc, skybox_viewLoc, skybox_normalColoringLoc;
-	static GLuint objectShader, object_projectionLoc, object_viewLoc, object_normalColoringLoc, object_cameraPosLoc, object_reflectionLoc;
-	static GLuint terrain_projectionLoc, terrain_viewLoc;
-	static int normalColoring;
+	static GLuint skyboxShader, skybox_projectionLoc, skybox_viewLoc;
+	static GLuint objectShader, object_projectionLoc, object_viewLoc, object_cameraPosLoc, object_reflectionLoc;
+    static GLuint terrainShader, terrain_projectionLoc, terrain_viewLoc;
 	static glm::vec3 cursor;
 	static glm::vec3 pressedPos;
 	static bool pressed;

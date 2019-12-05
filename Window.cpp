@@ -9,7 +9,7 @@ std::string Window::windowTitle = "GLFW Starter Project";
 // Objects to display.
 Skybox * Window::skybox;
 Geometry * Window::sphere;
-Track * Window::track;
+Terrain * Window::terrain;
 
 double Window::oldTime;
 double Window::distance;
@@ -27,8 +27,8 @@ float Window::currY =  0.0f;
 float Window::yaw   = 90.0f;  // yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the right (to face +z axis). TODO: fix once facing -z
 float Window::pitch =  0.0f;
 
-glm::vec3 Window::eye(0, 0, 0); // Camera position.
-glm::vec3 Window::center(0, 0, 1); // The point we are looking at.
+glm::vec3 Window::eye(0, 10, 0); // Camera position.
+glm::vec3 Window::center(0, 10, 1); // The point we are looking at.
 glm::vec3 Window::up(0, 1, 0); // The up direction of the camera.
 
 // View matrix, defined by eye, center and up.
@@ -37,21 +37,18 @@ glm::mat4 Window::view = glm::lookAt(Window::eye, Window::center, Window::up);
 // Shaders
 GLuint Window::skyboxShader;
 GLuint Window::objectShader;
+GLuint Window::terrainShader;
 
 GLuint Window::skybox_projectionLoc; // Location of projection in shader.
 GLuint Window::skybox_viewLoc; // Location of view in shader.
-GLuint Window::skybox_normalColoringLoc;
 
 GLuint Window::object_projectionLoc; // Location of projection in shader.
 GLuint Window::object_viewLoc; // Location of view in shader.
-GLuint Window::object_normalColoringLoc;
 GLuint Window::object_cameraPosLoc;
 GLuint Window::object_reflectionLoc;
 
 GLuint Window::terrain_projectionLoc; // Location of projection in shader.
 GLuint Window::terrain_viewLoc; // Location of view in shader.
-
-int Window::normalColoring = 0;
 
 glm::vec3 Window::cursor(0, 0, 0); // 3-D position of cursor
 glm::vec3 Window::pressedPos(0, 0, 0); // 3-D position of cursor at moment of mouse press
@@ -63,7 +60,6 @@ bool Window::initializeProgram()
 	skyboxShader = LoadShaders("shaders/skybox.vert", "shaders/skybox.frag");
 	objectShader = LoadShaders("shaders/shader.vert", "shaders/shader.frag");
 	terrainShader = LoadShaders("shaders/terrainShader.vert", "shaders/terrainShader.frag");
-	Debug::checkGLError("load shaders");
 
 	// Check the shader program.
 	if (!skyboxShader)
@@ -86,20 +82,16 @@ bool Window::initializeProgram()
 	glUseProgram(skyboxShader);
 	skybox_projectionLoc = glGetUniformLocation(skyboxShader, "projection");
 	skybox_viewLoc = glGetUniformLocation(skyboxShader, "view");
-	skybox_normalColoringLoc = glGetUniformLocation(skyboxShader, "normalColoring");
 
 	glUseProgram(objectShader);
 	object_cameraPosLoc = glGetUniformLocation(objectShader, "cameraPos");
 	object_projectionLoc = glGetUniformLocation(objectShader, "projection");
 	object_viewLoc = glGetUniformLocation(objectShader, "view");
-	object_normalColoringLoc = glGetUniformLocation(objectShader, "normalColoring");
 	object_reflectionLoc = glGetUniformLocation(objectShader, "reflection");
 
 	glUseProgram(terrainShader);
 	terrain_projectionLoc = glGetUniformLocation(terrainShader, "projection");
 	terrain_viewLoc = glGetUniformLocation(terrainShader, "view");
-
-	Debug::checkGLError("initialize program");
 
 	return true;
 }
@@ -108,7 +100,7 @@ bool Window::initializeObjects()
 {	
 	//skybox = new Skybox(SKYBOX_DEMO, skyboxShader);
 	//skybox = new Skybox(PALACE, skyboxShader);
-	skybox = new Skybox(SKYBOX, skyboxShader);
+	skybox = new Skybox({"skybox/right.jpg", "skybox/left.jpg", "skybox/top.jpg", "skybox/bottom.jpg", "skybox/front.jpg", "skybox/back.jpg"}, skyboxShader);
 	//skybox = new Skybox(COLORED_FACES, skyboxShader);
 
 	// sphere = new Geometry(SPHERE_OBJ, objectShader);
@@ -116,9 +108,10 @@ bool Window::initializeObjects()
 	// sphere->setModelMatrix(glm::translate(sphere->getModel(), track->getCurrentControlPoint()->getCoordinates()));
 	// sphere->setModelMatrix(glm::scale(sphere->getModel(), glm::vec3(0.5f, 0.5f, 0.5f)));
 
-	terrain = new Terrain(5, terrainShader);
-
-	Debug::checkGLError("initialize objects");
+	terrain = new Terrain(6, terrainShader);
+    eye.y = terrain->getTerrainHeight(0, 0) + 2;
+    center.y = eye.y;
+    view = glm::lookAt(eye, center, up);
 
 	return true;
 }
@@ -281,15 +274,14 @@ void Window::displayCallback(GLFWwindow* window)
 	terrain->render();
 
 	// Render the skybox.
+    glDepthFunc(GL_LEQUAL);
 	glUseProgram(skyboxShader);
 	glUniformMatrix4fv(skybox_projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-	glUniformMatrix4fv(skybox_viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-	glUniform1i(skybox_normalColoringLoc, normalColoring);
-
-	skybox->render();
-
-	Debug::checkGLError("render objects");
-
+    glm::mat4 view = glm::mat4(glm::mat3(Window::view)); // remove translation from the view matrix
+    glUniformMatrix4fv(skybox_viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    skybox->render();
+    glDepthFunc(GL_LESS);
+    
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();
 	// Swap buffers.
@@ -299,49 +291,49 @@ void Window::displayCallback(GLFWwindow* window)
 
 void Window::cursorPosCallback(GLFWwindow* window, double xpos, double ypos) 
 {
-	cursor = trackBallMapping(glm::vec2(xpos, ypos));
-	currX = xpos;
-	currY = ypos;
-
-	if (pressed) {
-	    float xoffset = xpos - lastX;
-	    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
-	    lastX = xpos;
-	    lastY = ypos;
-
-	    float sensitivity = 0.1f; // change this value to your liking
-	    xoffset *= sensitivity;
-	    yoffset *= sensitivity;
-
-	    yaw -= xoffset;
-	    pitch -= yoffset;
-
-	    // make sure that when pitch is out of bounds, screen doesn't get flipped
-	    if (pitch > 89.0f)
-	        pitch = 89.0f;
-	    if (pitch < -89.0f)
-	        pitch = -89.0f;
-
-	    glm::vec3 front;
-	    front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-	    front.y = sin(glm::radians(pitch));
-	    front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-	    view = glm::lookAt(eye, eye + front, up);
-	}
+    cursor = trackBallMapping(glm::vec2(xpos, ypos));
+    currX = xpos;
+    currY = ypos;
+    
+    if (pressed) {
+        float xoffset = xpos - lastX;
+        float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+        lastX = xpos;
+        lastY = ypos;
+        
+        float sensitivity = 0.1f; // change this value to your liking
+        xoffset *= sensitivity;
+        yoffset *= sensitivity;
+        
+        yaw -= xoffset;
+        pitch -= yoffset;
+        
+        // make sure that when pitch is out of bounds, screen doesn't get flipped
+        if (pitch > 89.0f)
+            pitch = 89.0f;
+        if (pitch < -89.0f)
+            pitch = -89.0f;
+        
+        glm::vec3 front;
+        front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        front.y = sin(glm::radians(pitch));
+        front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+        center = eye + front;
+        view = glm::lookAt(eye, center, up);
+    }
 }
-
 
 void Window::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-		pressedPos = cursor;
-		lastX = currX;
-		lastY = currY;
-		pressed = true;
-	}
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
-		pressed = false;
-	}
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        pressedPos = cursor;
+        lastX = currX;
+        lastY = currY;
+        pressed = true;
+    }
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+        pressed = false;
+    }
 }
 
 void Window::mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
@@ -366,46 +358,37 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 			// Close the window. This causes the program to also terminate.
 			glfwSetWindowShouldClose(window, GL_TRUE);				
 			break;
-		case GLFW_KEY_N:
-			normalColoring = !normalColoring;
-			break;
 		default:
 			break;
 		}
 	}
-
+    
+    glm::vec3 forward = glm::normalize(center - eye);
+    glm::vec3 front = glm::vec3(forward.x, 0, forward.z);
 	// Adjust camera (for testing)
 	switch (key)
 	{
-	case GLFW_KEY_UP:
-		eye = eye + glm::vec3(0.0f, 1.0f, 0.0f);
-		view = glm::lookAt(eye, center, up);
-		break;
-	case GLFW_KEY_DOWN:
-		eye = eye + glm::vec3(0.0f, -1.0f, 0.0f);
-		view = glm::lookAt(eye, center, up);
-		break;
-	case GLFW_KEY_LEFT:
-		eye = eye + glm::vec3(-1.0f, 0.0f, 0.0f);
-		view = glm::lookAt(eye, center, up);
-		break;
-	case GLFW_KEY_RIGHT:
-		eye = eye + glm::vec3(1.0f, 0.0f, 0.0f);
-		view = glm::lookAt(eye, center, up);
-		break;
-	case GLFW_KEY_O:
-		// Adjust fov
-		if (mods == GLFW_MOD_SHIFT) {
-			// Zoom in
-			fov += 1.0;
-		}
-		else {
-			// Zoom out
-			fov -= 1.0;
-		}
-		resizeCallback(window, width, height);
-		break;
-	default:
-		break;
+        case GLFW_KEY_W:
+            eye += front;
+            center += front;
+            break;
+        case GLFW_KEY_A:
+            eye += glm::rotateY(front, (float)(M_PI / 2));
+            center += glm::rotateY(front, (float)(M_PI / 2));
+            break;
+        case GLFW_KEY_S:
+            eye += -front;
+            center += -front;
+            break;
+        case GLFW_KEY_D:
+            eye += glm::rotateY(front, -(float)(M_PI / 2));
+            center += glm::rotateY(front, -(float)(M_PI / 2));
+            break;
+        default:
+            break;
 	}
+    float oldEyeY = eye.y;
+    eye.y = terrain->getTerrainHeight(center.x, center.z) + 2;
+    center.y += eye.y - oldEyeY;
+    view = glm::lookAt(eye, center, up);
 }
