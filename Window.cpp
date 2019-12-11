@@ -9,9 +9,14 @@ std::string Window::windowTitle = "GLFW Starter Project";
 // Objects to display.
 Skybox * Window::skybox;
 Transform * Window::world;
-Geometry * Window::star;
+std::vector<Geometry*> Window::stars;
+std::vector<Geometry*> Window::spheres;
 Terrain * Window::terrain;
-LSystem * Window::trees;
+// LSystem * Window::trees;
+
+// Bounding sphere data
+std::vector<float> Window::radiuses;
+std::vector<glm::vec3> Window::origins; 
 
 double Window::oldTime;
 double Window::distance;
@@ -61,6 +66,9 @@ GLuint Window::lightSpecularLoc; // Location of light specular in shader.
 GLuint Window::lightPosLoc; // Location of light position in shader.
 GLuint Window::lightDirLoc; // Location of light direction in shader.
 GLuint Window::lightLinearLoc; // Location of light attenuation linear factor in shader.
+
+// Flag to toggle on/off rendering of the bounding spheres
+int Window::renderSpheres = 0;
 
 glm::vec3 Window::cursor(0, 0, 0); // 3-D position of cursor
 glm::vec3 Window::pressedPos(0, 0, 0); // 3-D position of cursor at moment of mouse press
@@ -129,31 +137,44 @@ bool Window::initializeObjects()
 	skybox = new Skybox({"skybox/right.jpg", "skybox/left.jpg", "skybox/top.jpg", "skybox/bottom.jpg", "skybox/front.jpg", "skybox/back.jpg"}, skyboxShader);
     
     world = new Transform();
-
-    star = new Geometry("objs/star.obj", objectShader);
     
 	terrain = new Terrain(3, terrainShader);
     eye.y = terrain->getTerrainHeight(0, 0) + 2;
     center.y = eye.y;
     view = glm::lookAt(eye, center, up);
     
-    trees = new LSystem(20.0f, 1, plantShader);
-    
-    Transform* scale = new Transform(glm::scale(glm::vec3(0.1f, 0.4f, 0.2f)), 1);
-    Transform* rotate = new Transform(glm::rotate((float)(M_PI / 2), glm::vec3(1, 0, 0)), 0);
-    scale->addChild(star);
-    rotate->addChild(scale);
-    
+    // trees = new LSystem(20.0f, 1, plantShader);
+   
+
     // create starting positions for the stars
     for(unsigned int i = 0; i < 5; i++) {
+    	Geometry* star = new Geometry("objs/star.obj", objectShader);
+    	stars.push_back(star);
+
+    	Transform* scaleStar = new Transform(glm::scale(glm::vec3(0.2f, 0.2f, 0.2f)), 1);
+    	Transform* rotate = new Transform(glm::rotate((float)(M_PI / 2), glm::vec3(1, 0, 0)), 0);
+    	scaleStar->addChild(star);
+	    rotate->addChild(scaleStar);
+
+    	Geometry* sphere = new Geometry("objs/sphere.obj", objectShader);
+    	spheres.push_back(sphere);
+
+	    sphere->toggleRender(renderSpheres);
+	    sphere->useSetColor(1);
+	    Transform* scaleSphere = new Transform(glm::scale(glm::vec3(2.0f, 2.0f, 2.0f)), 0);
+	    scaleSphere->addChild(sphere);
+
         float randX = std::rand() % (terrain->scale * terrain->terrain.size()) - (terrain->scale * terrain->terrain.size() / 2.0f);
         float randZ = std::rand() % (terrain->scale * terrain->terrain.size()) - (terrain->scale * terrain->terrain.size() / 2.0f);
+        float randY = terrain->getTerrainHeight(randX, randZ) + 3;
+        Transform* randomTransform = new Transform(glm::translate(glm::vec3(randX, randY, randZ)), 0);
         
-        Transform* randomTransform = new Transform(glm::translate(glm::vec3(randX,
-                                                                           terrain->getTerrainHeight(randX, randZ) + 3,
-                                                                           randZ)), 0);
-        
+        // Sphere data
+    	radiuses.push_back(2.0f);
+    	origins.push_back(glm::vec3(randX, randY, randZ));
+
         randomTransform->addChild(rotate);
+        randomTransform->addChild(scaleSphere);
         world->addChild(randomTransform);
     }
 
@@ -165,9 +186,14 @@ void Window::cleanUp()
 	// Deallcoate the objects.
 	delete skybox;
     delete world;
-	delete star;
+    for (Geometry* star : stars) {
+    	delete star;
+    }
+    for (Geometry* sphere : spheres) {
+    	delete sphere;
+    }
 	delete terrain;
-    delete trees;
+    // delete trees;
 
 	// Delete the shader program.
 	glDeleteProgram(skyboxShader);
@@ -274,6 +300,17 @@ void Window::resizeCallback(GLFWwindow* window, int width, int height)
 void Window::idleCallback()
 {
     world->update();
+
+    for (Geometry* sphere : spheres) {
+   		sphere->toggleRender(renderSpheres);
+    }
+
+    // Collision detection
+    for (int i = 0; i < stars.size(); ++i) {
+    	if (Math::isInsideSphere(eye, radiuses[i], origins[i])) {
+    		std::cout << "collision detected at " << i << std::endl;
+    	}
+    }
 }
 
 void Window::displayCallback(GLFWwindow* window)
@@ -300,7 +337,7 @@ void Window::displayCallback(GLFWwindow* window)
 	glUniformMatrix4fv(terrain_projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 	glUniformMatrix4fv(terrain_viewLoc, 1, GL_FALSE, glm::value_ptr(view));	
 
-	terrain->render();
+	//terrain->render();
 
 	// Render the skybox.
     glDepthFunc(GL_LEQUAL);
@@ -311,7 +348,7 @@ void Window::displayCallback(GLFWwindow* window)
     skybox->render();
     glDepthFunc(GL_LESS);
     
-    trees->render();
+    // trees->render();
     
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();
@@ -388,6 +425,10 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 			// Close the window. This causes the program to also terminate.
 			glfwSetWindowShouldClose(window, GL_TRUE);				
 			break;
+		case GLFW_KEY_V:
+			// Toggle rendering bounding spheres
+			renderSpheres = renderSpheres ? 0 : 1;
+			break;
 		default:
 			break;
 		}
@@ -395,30 +436,37 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
     
     glm::vec3 forward = center - eye;
     glm::vec3 front = glm::normalize(glm::vec3(forward.x, 0, forward.z));
-	// Adjust camera (for testing)
+	bool movement = false;
+
 	switch (key)
 	{
         case GLFW_KEY_W:
             eye += front;
             center += front;
+            movement = true;
             break;
         case GLFW_KEY_A:
             eye += glm::rotateY(front, (float)(M_PI / 2));
             center += glm::rotateY(front, (float)(M_PI / 2));
+            movement = true;
             break;
         case GLFW_KEY_S:
             eye += -front;
             center += -front;
+            movement = true;
             break;
         case GLFW_KEY_D:
             eye += glm::rotateY(front, -(float)(M_PI / 2));
             center += glm::rotateY(front, -(float)(M_PI / 2));
+            movement = true;
             break;
         default:
             break;
 	}
-    float oldEyeY = eye.y;
-    eye.y = terrain->getTerrainHeight(center.x, center.z) + 2;
-    center.y += eye.y - oldEyeY;
-    view = glm::lookAt(eye, center, up);
+	if (movement) {
+		float oldEyeY = eye.y;
+	    eye.y = terrain->getTerrainHeight(center.x, center.z) + 2;
+	    center.y += eye.y - oldEyeY;
+	    view = glm::lookAt(eye, center, up);
+	}
 }

@@ -5,6 +5,8 @@
 #define GLFW_INCLUDE_GLCOREARB
 #include <OpenGL/gl3.h>
 #else
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include <GL/glew.h>
 #endif
 #include <GLFW/glfw3.h>
@@ -32,7 +34,7 @@
 #include "Transform.h"
 #include "Terrain.h"
 #include "texture.h"
-#include "LSystem.h"
+// #include "LSystem.h"
 
 struct Light {
     glm::vec3 position;
@@ -57,9 +59,13 @@ public:
 	static std::string windowTitle;
 	static Skybox* skybox;
     static Transform* world;
-	static Geometry* star;
+	// static Geometry* star;
+	static std::vector<Geometry*> stars;
+	static std::vector<Geometry*> spheres;
 	static Terrain* terrain;
-    static LSystem* trees;
+    // static LSystem* trees;
+    static std::vector<float> radiuses;
+	static std::vector<glm::vec3> origins;
 	static glm::mat4 projection;
 	static glm::mat4 view;
 	static glm::vec3 eye, center, up;
@@ -68,6 +74,7 @@ public:
     static GLuint terrainShader, terrain_projectionLoc, terrain_viewLoc;
     static GLuint lightAmbientLoc, lightDiffuseLoc, lightSpecularLoc, lightPosLoc, lightDirLoc, lightLinearLoc;
     static GLuint plantShader;
+    static int renderSpheres;
 	static glm::vec3 cursor;
 	static glm::vec3 pressedPos;
 	static bool pressed;
