@@ -12,6 +12,7 @@
 #include <glm/gtx/transform.hpp>
 #include <vector>
 
+#include "Debug.h"
 #include "Node.h"
 #include "shader.h"
 
@@ -26,7 +27,6 @@ class Geometry : public Node
 {
 protected:
 	glm::mat4 model;
-	glm::vec3 color;
 	Material material;
 	std::vector<glm::vec3> points;
 	std::vector<glm::vec3> normals;
@@ -35,7 +35,7 @@ protected:
 	GLuint program;
 	GLuint textureId = -1;
 	GLuint vao, ebo;
-	GLuint vbos [2];
+	GLuint vbos [3];
 	int toRender = 1;
 	std::vector<glm::vec3> offsets;
 public:
@@ -51,12 +51,10 @@ public:
 	void setModelMatrix(glm::mat4 M) { this->model = M; };
 	void setOffsets(std::vector<glm::vec3> offsets) { this->offsets = offsets; }
 	void setMaterial(Material material) { this->material = material; }
-	void setColor(glm::vec3 color) { this->color = color; }
 	void toggleRender(int toRender) { this->toRender = toRender; }
 	void setTextureSampler(GLuint textureId) { this->textureId = textureId; }
 
 	glm::mat4 getModel() { return model; }
-	glm::vec3 getColor() { return color; }
 	Material getMaterial() { return material; }
 };
 

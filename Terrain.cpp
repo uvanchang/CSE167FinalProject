@@ -172,8 +172,6 @@ void Terrain::diamondSquare(int n, std::vector<std::pair<int, int>> cornerPoints
 }
 
 void Terrain::render() {
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
 	glUseProgram(shader);
 
 	GLuint modelLoc = glGetUniformLocation(shader, "model");
@@ -194,8 +192,8 @@ float Terrain::getTerrainHeight(float x, float z) {
     float terrainX = x + scale * terrain.size() / 2.0f;
     float terrainZ = z + scale * terrain.size() / 2.0f;
     
-    float scaleX = terrainX / scale;
-    float scaleZ = terrainZ / scale;
+    float scaleX = terrainX / scale + 0.001;
+    float scaleZ = terrainZ / scale - 0.001;
     
     float row = ceil(scaleZ) -  scaleZ;
     float col = scaleX - floor(scaleX);

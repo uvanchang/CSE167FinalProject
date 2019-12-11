@@ -4,14 +4,16 @@
 
 #include "Transform.h"
 
-Transform::Transform(glm::mat4 M) 
+Transform::Transform(glm::mat4 M, int id)
 {
 	transformMatrix = M;
+    this->id = id;
 }
 
 Transform::Transform() 
 {
 	transformMatrix = glm::mat4(1.0);
+    id = 0;
 }
 
 Transform::~Transform()
@@ -36,5 +38,10 @@ void Transform::draw(glm::mat4 C)
 
 void Transform::update() 
 {
-
+    if (id == 1) {
+        transformMatrix = glm::rotate(transformMatrix, 0.001f, glm::vec3(0.0f, 0.0f, 1.0f));
+    }
+    for (Node* child : children) {
+        child->update();
+    }
 }

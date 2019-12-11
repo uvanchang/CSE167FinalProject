@@ -1,35 +1,56 @@
 #version 330 core
-// This is a sample fragment shader.
+struct Material {
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+    float shininess;
+};
 
-// Inputs to the fragment shader are the outputs of the same name from the vertex shader.
-// Note that you do not have access to the vertex shader's default output, gl_Position.
-in vec3 Normal;
-in vec3 FragPos;
+struct Light {
+    vec3 position;
+    vec3 direction;
+    
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+    
+    float linear;
+};
 
-uniform samplerCube skybox;
-uniform vec3 cameraPos;
-uniform int normalColoring;
-uniform int reflection;
-uniform vec3 color;
+in vec3 normal;
+in vec3 fragPos;
+
+uniform vec3 viewPos;
+uniform Material material;
+uniform Light light;
 
 // You can output many things. The first vec4 type output determines the color of the fragment
-out vec4 FragColor;
+out vec4 fragColor;
 
 void main()
-{	
-	if (normalColoring > 0) // Use normal coloring
-	{
-		vec3 norm = normalize(Normal);
-		FragColor = vec4(norm, 1.0f);
-	}
-	else if (reflection > 0) // Use environment mapping
-	{
-	    vec3 I = normalize(FragPos - cameraPos);
-	    vec3 R = reflect(I, normalize(Normal));
-	    FragColor = vec4(texture(skybox, R).rgb, 1.0);
-	}
-	else
-	{
-		FragColor = vec4(color, 1.0f);
-	} 
+{
+    // ambient
+    vec3 ambient = light.ambient * material.ambient;
+    
+    // diffuse
+    vec3 norm = normalize(normal);
+    //vec3 lightDir = normalize(light.position - fragPos);
+    vec3 lightDir = normalize(light.direction);
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = light.diffuse * (diff * material.diffuse);
+    
+    // specular
+    vec3 viewDir = normalize(viewPos - fragPos);
+    vec3 reflectDir = reflect(-lightDir, norm);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    vec3 specular = light.specular * (spec * material.specular);
+    
+//    float distance    = length(light.position - fragPos);
+//    float attenuation = 1.0 / (light.linear * distance);
+    
+//    diffuse *= attenuation;
+//    specular *= attenuation;
+    
+    vec3 result = ambient + diffuse + specular;
+    fragColor = vec4(result, 1.0);
 }

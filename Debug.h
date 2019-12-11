@@ -33,6 +33,10 @@ public:
 		}
 		std::cout << "]" << std::endl;
 	}
+    
+    static void printVector2(glm::vec2 V) {
+        std::cout << "(" << V.x << ", " << V.y << ")" << std::endl;
+    }
 
 	static void printVector3(glm::vec3 V) {
 		std::cout << "(" << V.x << ", " << V.y << ", " << V.z << ")" << std::endl;

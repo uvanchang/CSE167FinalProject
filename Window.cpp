@@ -8,8 +8,10 @@ std::string Window::windowTitle = "GLFW Starter Project";
 
 // Objects to display.
 Skybox * Window::skybox;
-Geometry * Window::sphere;
+Transform * Window::world;
+Geometry * Window::star;
 Terrain * Window::terrain;
+LSystem * Window::trees;
 
 double Window::oldTime;
 double Window::distance;
@@ -38,6 +40,7 @@ glm::mat4 Window::view = glm::lookAt(Window::eye, Window::center, Window::up);
 GLuint Window::skyboxShader;
 GLuint Window::objectShader;
 GLuint Window::terrainShader;
+GLuint Window::plantShader;
 
 GLuint Window::skybox_projectionLoc; // Location of projection in shader.
 GLuint Window::skybox_viewLoc; // Location of view in shader.
@@ -50,6 +53,15 @@ GLuint Window::object_reflectionLoc;
 GLuint Window::terrain_projectionLoc; // Location of projection in shader.
 GLuint Window::terrain_viewLoc; // Location of view in shader.
 
+Light Window::light;
+
+GLuint Window::lightAmbientLoc; // Location of light ambient in shader.
+GLuint Window::lightDiffuseLoc; // Location of light diffuse in shader.
+GLuint Window::lightSpecularLoc; // Location of light specular in shader.
+GLuint Window::lightPosLoc; // Location of light position in shader.
+GLuint Window::lightDirLoc; // Location of light direction in shader.
+GLuint Window::lightLinearLoc; // Location of light attenuation linear factor in shader.
+
 glm::vec3 Window::cursor(0, 0, 0); // 3-D position of cursor
 glm::vec3 Window::pressedPos(0, 0, 0); // 3-D position of cursor at moment of mouse press
 bool Window::pressed = false; // Flag to determine if mouse button is pressed
@@ -60,6 +72,7 @@ bool Window::initializeProgram()
 	skyboxShader = LoadShaders("shaders/skybox.vert", "shaders/skybox.frag");
 	objectShader = LoadShaders("shaders/shader.vert", "shaders/shader.frag");
 	terrainShader = LoadShaders("shaders/terrainShader.vert", "shaders/terrainShader.frag");
+    plantShader = LoadShaders("shaders/plantShader.vert", "shaders/plantShader.frag");
 
 	// Check the shader program.
 	if (!skyboxShader)
@@ -97,21 +110,52 @@ bool Window::initializeProgram()
 }
 
 bool Window::initializeObjects()
-{	
-	//skybox = new Skybox(SKYBOX_DEMO, skyboxShader);
-	//skybox = new Skybox(PALACE, skyboxShader);
+{
+    // Set the light parameters.
+    light.position = glm::vec3(0.0f, 20.0f, 0.0f);
+    light.direction = glm::vec3(1.0f, 1.0f, 0.0f);
+    light.ambient = glm::vec3(1.0f, 1.0f, 0.8f);
+    light.diffuse = glm::vec3(1.0f, 1.0f, 0.8f);
+    light.specular = glm::vec3(1, 1, 1);
+    light.linear = 0.09f;
+    
+    lightAmbientLoc = glGetUniformLocation(objectShader, "light.ambient");
+    lightDiffuseLoc = glGetUniformLocation(objectShader, "light.diffuse");
+    lightSpecularLoc = glGetUniformLocation(objectShader, "light.specular");
+    lightPosLoc = glGetUniformLocation(objectShader, "light.position");
+    lightDirLoc = glGetUniformLocation(objectShader, "light.direction");
+    lightLinearLoc = glGetUniformLocation(objectShader, "light.linear");
+    
 	skybox = new Skybox({"skybox/right.jpg", "skybox/left.jpg", "skybox/top.jpg", "skybox/bottom.jpg", "skybox/front.jpg", "skybox/back.jpg"}, skyboxShader);
-	//skybox = new Skybox(COLORED_FACES, skyboxShader);
+    
+    world = new Transform();
 
-	// sphere = new Geometry(SPHERE_OBJ, objectShader);
-	// sphere->setTextureSampler(skybox->getTextureId());
-	// sphere->setModelMatrix(glm::translate(sphere->getModel(), track->getCurrentControlPoint()->getCoordinates()));
-	// sphere->setModelMatrix(glm::scale(sphere->getModel(), glm::vec3(0.5f, 0.5f, 0.5f)));
-
-	terrain = new Terrain(6, terrainShader);
+    star = new Geometry("objs/star.obj", objectShader);
+    
+	terrain = new Terrain(3, terrainShader);
     eye.y = terrain->getTerrainHeight(0, 0) + 2;
     center.y = eye.y;
     view = glm::lookAt(eye, center, up);
+    
+    trees = new LSystem(20.0f, 1, plantShader);
+    
+    Transform* scale = new Transform(glm::scale(glm::vec3(0.1f, 0.4f, 0.2f)), 1);
+    Transform* rotate = new Transform(glm::rotate((float)(M_PI / 2), glm::vec3(1, 0, 0)), 0);
+    scale->addChild(star);
+    rotate->addChild(scale);
+    
+    // create starting positions for the stars
+    for(unsigned int i = 0; i < 5; i++) {
+        float randX = std::rand() % (terrain->scale * terrain->terrain.size()) - (terrain->scale * terrain->terrain.size() / 2.0f);
+        float randZ = std::rand() % (terrain->scale * terrain->terrain.size()) - (terrain->scale * terrain->terrain.size() / 2.0f);
+        
+        Transform* randomTransform = new Transform(glm::translate(glm::vec3(randX,
+                                                                           terrain->getTerrainHeight(randX, randZ) + 3,
+                                                                           randZ)), 0);
+        
+        randomTransform->addChild(rotate);
+        world->addChild(randomTransform);
+    }
 
 	return true;
 }
@@ -120,8 +164,10 @@ void Window::cleanUp()
 {
 	// Deallcoate the objects.
 	delete skybox;
-	delete sphere;
+    delete world;
+	delete star;
 	delete terrain;
+    delete trees;
 
 	// Delete the shader program.
 	glDeleteProgram(skyboxShader);
@@ -226,45 +272,28 @@ void Window::resizeCallback(GLFWwindow* window, int width, int height)
 }
 
 void Window::idleCallback()
-{	
-	// // Sphere movement
-	// double speed = 700;
-	// double time = glfwGetTime();
-	// double delta_time = time - oldTime;
-	// oldTime = time;
-	// float curveLength = track->getCurve(curveIndex)->getLength();
-	// if (!pauseTrack) {
-	// 	distance += speed * delta_time / curveLength;
-	// }
-	// curveIndex = (int(distance) / 150) % 8;
-	// pointIndex = int(distance) % 150;
-	// glm::vec3 point = track->getCurve(curveIndex)->getPoint(pointIndex);
-	// sphere->setModelMatrix(glm::translate(glm::mat4(1.0f), point));	
-
-	// sphere->update();
-	// track->update();
-
-	// Debug::checkGLError("update objects");
+{
+    world->update();
 }
 
 void Window::displayCallback(GLFWwindow* window)
-{	
-	// Clear the color and depth buffers.
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
-
-	// // Render objects (sphere, bezier track)
-	// glUseProgram(objectShader);
-	// glUniformMatrix4fv(object_projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-	// glUniformMatrix4fv(object_viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-	// glUniform3fv(object_cameraPosLoc, 1, glm::value_ptr(eye));
-	// glUniform1i(object_normalColoringLoc, normalColoring);
-	// glUniform1i(object_reflectionLoc, 1); // Enable environment mapping for sphere
-
-	// sphere->render();
-	
-	// glUniform1i(object_reflectionLoc, 0); // Disable environment mapping for bezier track
-	
-	// track->render();
+{
+    // Clear the color and depth buffers.
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    // Render the star
+    glUseProgram(objectShader);
+    glUniformMatrix4fv(object_projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+    glUniformMatrix4fv(object_viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    
+    glUniform3fv(lightAmbientLoc, 1, glm::value_ptr(light.ambient));
+    glUniform3fv(lightDiffuseLoc, 1, glm::value_ptr(light.diffuse));
+    glUniform3fv(lightSpecularLoc, 1, glm::value_ptr(light.specular));
+    glUniform3fv(lightPosLoc, 1, glm::value_ptr(light.position));
+    glUniform3fv(lightDirLoc, 1, glm::value_ptr(light.direction));
+    glUniform1f(lightLinearLoc, light.linear);
+    
+    world->draw(glm::mat4(1.0));
 
 	// Render the terrain.
 	glUseProgram(terrainShader);
@@ -282,12 +311,13 @@ void Window::displayCallback(GLFWwindow* window)
     skybox->render();
     glDepthFunc(GL_LESS);
     
+    trees->render();
+    
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();
 	// Swap buffers.
 	glfwSwapBuffers(window);
 }
-
 
 void Window::cursorPosCallback(GLFWwindow* window, double xpos, double ypos) 
 {
@@ -363,8 +393,8 @@ void Window::keyCallback(GLFWwindow* window, int key, int scancode, int action, 
 		}
 	}
     
-    glm::vec3 forward = glm::normalize(center - eye);
-    glm::vec3 front = glm::vec3(forward.x, 0, forward.z);
+    glm::vec3 forward = center - eye;
+    glm::vec3 front = glm::normalize(glm::vec3(forward.x, 0, forward.z));
 	// Adjust camera (for testing)
 	switch (key)
 	{

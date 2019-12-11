@@ -17,10 +17,11 @@
 class Transform : public Node
 {
 protected:
+    int id;
 	glm::mat4 transformMatrix;
 	std::vector<Node*> children;
 public:
-	Transform(glm::mat4 M);
+	Transform(glm::mat4 M, int id);
 	Transform();
 	~Transform();
 

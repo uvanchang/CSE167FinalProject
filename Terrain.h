@@ -29,9 +29,7 @@ protected:
 	GLuint shader;
     GLuint textureId;
 	GLuint vao;
-	GLuint vbos[2];
-	std::vector<std::vector<int>> terrain;
-    int scale = 5;
+    GLuint vbos[2];
 public:
 	Terrain(int n, GLuint shader);
 	~Terrain();
@@ -44,6 +42,9 @@ public:
 	glm::mat4 getModel() { return model; }
 	glm::vec3 getColor() { return color; }
     float getTerrainHeight(float x, float z);
+    
+    int scale = 4;
+    std::vector<std::vector<int>> terrain;
 };
 
 #endif

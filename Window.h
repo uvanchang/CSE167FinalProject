@@ -31,6 +31,18 @@
 #include "Skybox.h"
 #include "Transform.h"
 #include "Terrain.h"
+#include "texture.h"
+#include "LSystem.h"
+
+struct Light {
+    glm::vec3 position;
+    glm::vec3 direction;
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+    
+    float linear;
+};
 
 class Window
 {
@@ -44,18 +56,23 @@ public:
     static float currX, currY, lastX, lastY, pitch, yaw;
 	static std::string windowTitle;
 	static Skybox* skybox;
-	static Geometry* sphere;
+    static Transform* world;
+	static Geometry* star;
 	static Terrain* terrain;
+    static LSystem* trees;
 	static glm::mat4 projection;
 	static glm::mat4 view;
 	static glm::vec3 eye, center, up;
 	static GLuint skyboxShader, skybox_projectionLoc, skybox_viewLoc;
 	static GLuint objectShader, object_projectionLoc, object_viewLoc, object_cameraPosLoc, object_reflectionLoc;
     static GLuint terrainShader, terrain_projectionLoc, terrain_viewLoc;
+    static GLuint lightAmbientLoc, lightDiffuseLoc, lightSpecularLoc, lightPosLoc, lightDirLoc, lightLinearLoc;
+    static GLuint plantShader;
 	static glm::vec3 cursor;
 	static glm::vec3 pressedPos;
 	static bool pressed;
 	static int mode;
+    static Light light;
 
 	static bool initializeProgram();
 	static bool initializeObjects();
