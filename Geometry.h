@@ -28,6 +28,8 @@ class Geometry : public Node
 protected:
 	glm::mat4 model;
 	Material material;
+	glm::vec3 color;
+	int useColor;
 	std::vector<glm::vec3> points;
 	std::vector<glm::vec3> normals;
 	std::vector<glm::vec2> textures;
@@ -51,6 +53,8 @@ public:
 	void setModelMatrix(glm::mat4 M) { this->model = M; };
 	void setOffsets(std::vector<glm::vec3> offsets) { this->offsets = offsets; }
 	void setMaterial(Material material) { this->material = material; }
+	void setColor(glm::vec3 color) { this->color = color; }
+	void useSetColor(int useColor) { this->useColor = useColor; }
 	void toggleRender(int toRender) { this->toRender = toRender; }
 	void setTextureSampler(GLuint textureId) { this->textureId = textureId; }
 

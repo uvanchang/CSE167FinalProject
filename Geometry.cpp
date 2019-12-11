@@ -107,6 +107,8 @@ Geometry::Geometry(std::string objFilename, GLuint shader)
 
 	// Set the model matrix to an identity matrix. 
 	model = glm::mat4(1);
+	// Set default color
+	color = glm::vec3(1, 1, 1);
 	// Set the default material parameters.
 	material.ambient = glm::vec3(1.0f, 0.5f, 0.31f);
 	material.diffuse = glm::vec3(1.0f, 0.5f, 0.31f);
@@ -117,7 +119,52 @@ Geometry::Geometry(std::string objFilename, GLuint shader)
 //    material.diffuse = glm::vec3(0.75164f, 0.60648f, 0.22648f);
 //    material.specular = glm::vec3(0.628281f, 0.555802f, 0.366065f);
 //    material.shininess = 0.4f;
+}
+
+Geometry::~Geometry() {
+	// Delete the VBOs, EBO, and the VAO.
+	glDeleteBuffers(1, &ebo);
+	glDeleteBuffers(3, vbos);
+	glDeleteVertexArrays(1, &vao);
+}
+
+void Geometry::render() {
+	glUseProgram(program);
+
+	GLuint modelLoc = glGetUniformLocation(program, "model");
+	GLuint colorLoc = glGetUniformLocation(program, "color");
+	GLuint useSetColorLoc = glGetUniformLocation(program, "useSetColor");
+    GLuint ambientLoc = glGetUniformLocation(program, "material.ambient");
+    GLuint diffuseLoc = glGetUniformLocation(program, "material.diffuse");
+    GLuint specularLoc = glGetUniformLocation(program, "material.specular");
+    GLuint shininessLoc = glGetUniformLocation(program, "material.shininess");
     
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	glUniform3fv(colorLoc, 1, glm::value_ptr(color));
+	glUniform1i(useSetColorLoc, useColor);
+    glUniform3fv(ambientLoc, 1, glm::value_ptr(material.ambient));
+    glUniform3fv(diffuseLoc, 1, glm::value_ptr(material.diffuse));
+    glUniform3fv(specularLoc, 1, glm::value_ptr(material.specular));
+    glUniform1f(shininessLoc, material.shininess);
+
+	// Bind to the VAO.
+	glBindVertexArray(vao);
+    glBindTexture(GL_TEXTURE_2D, textureId);
+	
+	// Draw points 
+    glDrawArrays(GL_TRIANGLES, 0, points.size() * 3);
+	// Unbind from the VAO.
+	glBindVertexArray(0);
+}
+
+void Geometry::draw(glm::mat4 C) {
+	if (toRender) {
+		setModelMatrix(C);
+		render();
+	}
+}
+
+void Geometry::update() {
     glGenVertexArrays(1, &vao);
     glGenBuffers(3, vbos);
     
@@ -150,47 +197,4 @@ Geometry::Geometry(std::string objFilename, GLuint shader)
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     // Unbind from the VAO.
     glBindVertexArray(0);
-}
-
-Geometry::~Geometry() {
-	// Delete the VBOs, EBO, and the VAO.
-	glDeleteBuffers(1, &ebo);
-	glDeleteBuffers(3, vbos);
-	glDeleteVertexArrays(1, &vao);
-}
-
-void Geometry::render() {
-	glUseProgram(program);
-
-	GLuint modelLoc = glGetUniformLocation(program, "model");
-    GLuint ambientLoc = glGetUniformLocation(program, "material.ambient");
-    GLuint diffuseLoc = glGetUniformLocation(program, "material.diffuse");
-    GLuint specularLoc = glGetUniformLocation(program, "material.specular");
-    GLuint shininessLoc = glGetUniformLocation(program, "material.shininess");
-    
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-    glUniform3fv(ambientLoc, 1, glm::value_ptr(material.ambient));
-    glUniform3fv(diffuseLoc, 1, glm::value_ptr(material.diffuse));
-    glUniform3fv(specularLoc, 1, glm::value_ptr(material.specular));
-    glUniform1f(shininessLoc, material.shininess);
-
-	// Bind to the VAO.
-	glBindVertexArray(vao);
-    glBindTexture(GL_TEXTURE_2D, textureId);
-	
-	// Draw points 
-    glDrawArrays(GL_TRIANGLES, 0, points.size() * 3);
-	// Unbind from the VAO.
-	glBindVertexArray(0);
-}
-
-void Geometry::draw(glm::mat4 C) {
-	if (toRender) {
-		setModelMatrix(C);
-		render();
-	}
-}
-
-void Geometry::update() {
-    
 }
