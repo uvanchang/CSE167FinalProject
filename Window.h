@@ -59,7 +59,7 @@ public:
     static Transform* world;
 	static Geometry* star;
 	static Terrain* terrain;
-    static LSystem* trees;
+    static std::vector<LSystem*> trees;
 	static glm::mat4 projection;
 	static glm::mat4 view;
 	static glm::vec3 eye, center, up;
@@ -67,7 +67,7 @@ public:
 	static GLuint objectShader, object_projectionLoc, object_viewLoc, object_cameraPosLoc, object_reflectionLoc;
     static GLuint terrainShader, terrain_projectionLoc, terrain_viewLoc;
     static GLuint lightAmbientLoc, lightDiffuseLoc, lightSpecularLoc, lightPosLoc, lightDirLoc, lightLinearLoc;
-    static GLuint plantShader;
+    static GLuint plantShader, plant_projectionLoc, plant_viewLoc;
 	static glm::vec3 cursor;
 	static glm::vec3 pressedPos;
 	static bool pressed;

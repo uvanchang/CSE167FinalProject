@@ -1,9 +1,10 @@
 #include "LSystem.h"
 
-LSystem::LSystem(float angle, int iterations, GLuint shader)
+LSystem::LSystem(glm::vec3 rootPos, float angle, int iterations, GLuint shader)
     : angle(angle), shader(shader)
 {
-    trees = new std::vector<std::string>();
+    currBranch.angle = glm::vec3(0, 1, 0);
+    currBranch.position = rootPos;
     depth = 0;
     length = 5;
     rule = "X";
@@ -13,62 +14,73 @@ LSystem::LSystem(float angle, int iterations, GLuint shader)
     }
     
     model = glm::mat4(1);
-    material.ambient = glm::vec3(1.0f, 0.5f, 0.31f);
-    material.diffuse = glm::vec3(1.0f, 0.5f, 0.31f);
-    material.specular = glm::vec3(0.5f, 0.5f, 0.5f);
-    material.shininess = 32.0f;
     
     std::string ch = "";
-    std::string LSystem = trees->at(depth);
-    for (int i = 0; i < LSystem.length(); i++){
-        ch = LSystem.at(i);
+    for (int i = 0; i < rule.length(); i++){
+        ch = rule.at(i);
         
-        if (ch.compare("F") == 0 || ch.compare("X") == 0){
+        if (ch.compare("F") == 0){
             moveForward();
-        } else if (ch.compare("[") == 0){
-            push();
-        } else if (ch.compare("]") == 0){
+            branchLength *= 0.999999999;
+        } else if (ch.compare("[") == 0) {
+            push(currBranch);
+        } else if (ch.compare("]") == 0) {
             pop();
-        } else if (ch.compare("+") == 0){
+        } else if (ch.compare("+") == 0) {
             rotR();
-        } else if (ch.compare("-") == 0){
+        } else if (ch.compare("-") == 0) {
             rotL();
         }
     }
-}
-
-LSystem::~LSystem() {
-    delete trees;
-}
-
-void LSystem::push(){
-    glPushMatrix();
-}
-
-void LSystem::pop(){
-    glPopMatrix();
-}
-
-void LSystem::rotL(){
-    glRotatef(angle, 1, 0, 0);
-    glRotatef(angle * 4, 0, 1, 0);
-    glRotatef(angle, 0, 0, 1);
-}
-void LSystem::rotR(){
-    glRotatef(-angle, 1, 0, 0);
-    glRotatef(angle * 4, 0, 1, 0);
-    glRotatef(-angle, 0, 0, 1);
-}
-
-void LSystem::moveForward(){
-    glBegin(GL_LINES);
     
-    glColor3f(1.0f, 0.0f, 0.0f);
-    glVertex3f(0, 0, 0);
-    glVertex3f(length, 0, 0);
-    glEnd();
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
     
-    glTranslatef(0, length, 0);
+    glBindVertexArray(vao);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * points.size(), points.data(), GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+LSystem::~LSystem()
+{
+    glDeleteBuffers(1, &vbo);
+    glDeleteVertexArrays(1, &vao);
+}
+
+void LSystem::push(Branch b)
+{
+    stack.push_back(b);
+}
+
+void LSystem::pop()
+{
+    currBranch = stack.back();
+    stack.pop_back();
+}
+
+void LSystem::rotL()
+{
+    currBranch.angle = glm::rotateX(currBranch.angle, angle);
+    currBranch.angle = glm::rotateZ(currBranch.angle, (std::rand() % 20 - 10.0f) * (float)(M_PI / 180.0f));
+}
+
+void LSystem::rotR()
+{
+    currBranch.angle = glm::rotateX(currBranch.angle, -angle);
+    currBranch.angle = glm::rotateZ(currBranch.angle, (std::rand() % 20 - 10.0f) * (float)(M_PI / 180.0f));
+}
+
+void LSystem::moveForward()
+{
+    points.push_back(currBranch.position);
+    currBranch.position += currBranch.angle * branchLength;
+    points.push_back(currBranch.position);
 }
 
 void LSystem::genRule()
@@ -79,36 +91,30 @@ void LSystem::genRule()
         ch = rule.at(i);
         
         if (ch.compare("F") == 0){
-            rule.replace(i, 1, "FF");
-            i = i + 1;
-        } else if (ch.compare("X") == 0){
-            rule.replace(i, 1, "F[-X]F[+X]-X");
-            i = i + 11;
+            std::string rule1 = "FF";
+            rule.replace(i, 1, rule1);
+            i += rule1.length() - 1;
+        }
+        else if (ch.compare("X") == 0){
+            std::string rule2 = "F-[[X]+X]+F[+FX]-X";
+            rule.replace(i, 1, rule2);
+            i += rule2.length() - 1;
         }
         
     }
-    trees->push_back(rule);
 }
 
 void LSystem::render()
 {
     glUseProgram(shader);
     
-    
-    
-    glm::mat4 model(1.0f);
-    glm::vec3 color(1.0f, 0.0f, 0.0f); // Yellow
+    glm::vec3 color(0.0f, 1.0f, 0.0f);
     GLuint modelLoc = glGetUniformLocation(shader, "model");
     GLuint colorLoc = glGetUniformLocation(shader, "color");
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
     glUniform3fv(colorLoc, 1, glm::value_ptr(color));
     
-    glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
-    
+    glDrawArrays(GL_LINES, 0, points.size());
     glBindVertexArray(0);
-    
-    draw();
-    
-    
 }

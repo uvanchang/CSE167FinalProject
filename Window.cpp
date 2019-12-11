@@ -11,7 +11,7 @@ Skybox * Window::skybox;
 Transform * Window::world;
 Geometry * Window::star;
 Terrain * Window::terrain;
-LSystem * Window::trees;
+std::vector<LSystem*> Window::trees;
 
 double Window::oldTime;
 double Window::distance;
@@ -53,6 +53,9 @@ GLuint Window::object_reflectionLoc;
 GLuint Window::terrain_projectionLoc; // Location of projection in shader.
 GLuint Window::terrain_viewLoc; // Location of view in shader.
 
+GLuint Window::plant_projectionLoc;
+GLuint Window::plant_viewLoc;
+
 Light Window::light;
 
 GLuint Window::lightAmbientLoc; // Location of light ambient in shader.
@@ -90,6 +93,11 @@ bool Window::initializeProgram()
 		std::cerr << "Failed to initialize terrain shader" << std::endl;
 		return false;
 	}
+    if (!plantShader)
+    {
+        std::cerr << "Failed to initialize terrain shader" << std::endl;
+        return false;
+    }
 
 	// Get the locations of uniform variables.
 	glUseProgram(skyboxShader);
@@ -105,6 +113,10 @@ bool Window::initializeProgram()
 	glUseProgram(terrainShader);
 	terrain_projectionLoc = glGetUniformLocation(terrainShader, "projection");
 	terrain_viewLoc = glGetUniformLocation(terrainShader, "view");
+    
+    glUseProgram(plantShader);
+    plant_projectionLoc = glGetUniformLocation(terrainShader, "projection");
+    plant_viewLoc = glGetUniformLocation(terrainShader, "view");
 
 	return true;
 }
@@ -137,7 +149,13 @@ bool Window::initializeObjects()
     center.y = eye.y;
     view = glm::lookAt(eye, center, up);
     
-    trees = new LSystem(20.0f, 1, plantShader);
+    for(unsigned int i = 0; i < 5; i++) {
+        float randX = std::rand() % (terrain->scale * terrain->terrain.size()) - (terrain->scale * terrain->terrain.size() / 2.0f);
+        float randZ = std::rand() % (terrain->scale * terrain->terrain.size()) - (terrain->scale * terrain->terrain.size() / 2.0f);
+        
+        LSystem* tree = new LSystem(glm::vec3(randX, terrain->getTerrainHeight(randX, randZ), randZ), 20.0f * (float)(M_PI / 180.0f), 5, plantShader);
+        trees.push_back(tree);
+    }
     
     Transform* scale = new Transform(glm::scale(glm::vec3(0.1f, 0.4f, 0.2f)), 1);
     Transform* rotate = new Transform(glm::rotate((float)(M_PI / 2), glm::vec3(1, 0, 0)), 0);
@@ -167,7 +185,6 @@ void Window::cleanUp()
     delete world;
 	delete star;
 	delete terrain;
-    delete trees;
 
 	// Delete the shader program.
 	glDeleteProgram(skyboxShader);
@@ -301,6 +318,14 @@ void Window::displayCallback(GLFWwindow* window)
 	glUniformMatrix4fv(terrain_viewLoc, 1, GL_FALSE, glm::value_ptr(view));	
 
 	terrain->render();
+    
+    glUseProgram(plantShader);
+    glUniformMatrix4fv(plant_projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+    glUniformMatrix4fv(plant_viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    
+    for (LSystem* tree : trees) {
+        tree->render();
+    }
 
 	// Render the skybox.
     glDepthFunc(GL_LEQUAL);
@@ -308,10 +333,9 @@ void Window::displayCallback(GLFWwindow* window)
 	glUniformMatrix4fv(skybox_projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
     glm::mat4 view = glm::mat4(glm::mat3(Window::view)); // remove translation from the view matrix
     glUniformMatrix4fv(skybox_viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    
     skybox->render();
     glDepthFunc(GL_LESS);
-    
-    trees->render();
     
 	// Gets events, including input such as keyboard and mouse or window resizing.
 	glfwPollEvents();

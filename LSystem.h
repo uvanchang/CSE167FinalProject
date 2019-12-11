@@ -9,7 +9,6 @@
 #include <GL/glew.h>
 #endif
 
-#include <GLUT/GLUT.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -25,35 +24,36 @@
 
 struct Branch
 {
-    float position;
-    float angle;
+    glm::vec3 position;
+    glm::vec3 angle;
 };
 
 class LSystem
 {
 private:
+    std::vector<glm::vec3> points;
     float angle, length;
     int depth;
     std::string rule;
-    std::vector<std::string>* trees;
     std::vector<Branch> stack;
+    Branch currBranch;
     GLuint shader;
-    GLuint vao;
+    GLuint vao, vbo;
     glm::mat4 model;
     Material material;
+    float branchLength = 0.05f;
     
     std::vector<Branch> tree;
 public:
-    LSystem(float angle, int iterations, GLuint shader);
+    LSystem(glm::vec3 rootPos, float angle, int iterations, GLuint shader);
     LSystem(float angle);
     ~LSystem();
-    void push();
+    void push(Branch b);
     void pop();
     void rotL();
     void rotR();
     void moveForward();
     void genRule();
-    void draw();
     void display();
     void render();
 };
