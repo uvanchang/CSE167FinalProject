@@ -1,36 +1,45 @@
 #include "LSystem.h"
 
-LSystem::LSystem(glm::vec3 rootPos, float angle, int iterations, GLuint shader)
-    : angle(angle), shader(shader)
+LSystem::LSystem(glm::vec3 rootPos, std::vector<float> angles, std::string axiom, std::vector<Rule> ruleset, int iterations, GLuint shader)
+    : angles(angles), generatedRule(axiom), ruleset(ruleset), shader(shader)
 {
     currBranch.angle = glm::vec3(0, 1, 0);
     currBranch.position = rootPos;
-    depth = 0;
     length = 5;
-    rule = "X";
+    model = glm::mat4(1);
     
     for(int i = 0; i <= iterations; i++){
         genRule();
     }
     
-    model = glm::mat4(1);
-    
     std::string ch = "";
-    for (int i = 0; i < rule.length(); i++){
-        ch = rule.at(i);
+    for (int i = 0; i < generatedRule.length(); i++){
+        ch = generatedRule.at(i);
         
         if (ch.compare("F") == 0){
             moveForward();
-            branchLength *= 0.999999999;
-        } else if (ch.compare("[") == 0) {
+        } else if(ch.compare("[") == 0) {
             push(currBranch);
-        } else if (ch.compare("]") == 0) {
+        } else if(ch.compare("]") == 0) {
             pop();
-        } else if (ch.compare("+") == 0) {
-            rotR();
-        } else if (ch.compare("-") == 0) {
-            rotL();
+        } else if(ch.compare("\\") == 0) {
+            rotateXL();
+        } else if(ch.compare("/") == 0) {
+            rotateXR();
+        } else if(ch.compare("<") == 0) {
+            rotateYL();
+        } else if(ch.compare(">") == 0) {
+            rotateYR();
+        } else if(ch.compare("-") == 0) {
+            rotateZL();
+        } else if(ch.compare("+") == 0) {
+            rotateZR();
         }
+    }
+    
+    float randRotation = std::rand() % 360 * (float)(M_PI / 180.0f);
+    for (int i = 0; i < points.size(); i++) {
+        points[i] = glm::rotateY(points[i], randRotation);
     }
     
     glGenVertexArrays(1, &vao);
@@ -64,16 +73,40 @@ void LSystem::pop()
     stack.pop_back();
 }
 
-void LSystem::rotL()
+void LSystem::rotateXL()
 {
-    currBranch.angle = glm::rotateX(currBranch.angle, angle);
-    currBranch.angle = glm::rotateZ(currBranch.angle, (std::rand() % 20 - 10.0f) * (float)(M_PI / 180.0f));
+    currBranch.angle = glm::rotateX(currBranch.angle,
+                                    angles[0] + (std::rand() % 100 / 100.0f) * (float)(M_PI / 180.0f) - 0.5f * (float)(M_PI / 180.0f));
 }
 
-void LSystem::rotR()
+void LSystem::rotateXR()
 {
-    currBranch.angle = glm::rotateX(currBranch.angle, -angle);
-    currBranch.angle = glm::rotateZ(currBranch.angle, (std::rand() % 20 - 10.0f) * (float)(M_PI / 180.0f));
+    currBranch.angle = glm::rotateX(currBranch.angle,
+                                    -angles[0] + (std::rand() % 100 / 100.0f) * (float)(M_PI / 180.0f) - 0.5f * (float)(M_PI / 180.0f));
+}
+
+void LSystem::rotateYL()
+{
+    currBranch.angle = glm::rotateY(currBranch.angle,
+                                    angles[1] + (std::rand() % 100 / 100.0f) * (float)(M_PI / 180.0f) - 0.5f * (float)(M_PI / 180.0f));
+}
+
+void LSystem::rotateYR()
+{
+    currBranch.angle = glm::rotateY(currBranch.angle,
+                                    -angles[1] + (std::rand() % 100 / 100.0f) * (float)(M_PI / 180.0f) - 0.5f * (float)(M_PI / 180.0f));
+}
+
+void LSystem::rotateZL()
+{
+    currBranch.angle = glm::rotateZ(currBranch.angle,
+                                    angles[2] + (std::rand() % 100 / 100.0f) * (float)(M_PI / 180.0f) - 0.5f * (float)(M_PI / 180.0f));
+}
+
+void LSystem::rotateZR()
+{
+    currBranch.angle = glm::rotateZ(currBranch.angle,
+                                    -angles[2] + (std::rand() % 100 / 100.0f) * (float)(M_PI / 180.0f) - 0.5f * (float)(M_PI / 180.0f));
 }
 
 void LSystem::moveForward()
@@ -87,20 +120,15 @@ void LSystem::genRule()
 {
     std::string ch = "";
     
-    for (int i = 0; i < rule.length(); i++){
-        ch = rule.at(i);
+    for (int i = 0; i < generatedRule.length(); i++) {
+        ch = generatedRule.at(i);
         
-        if (ch.compare("F") == 0){
-            std::string rule1 = "FF";
-            rule.replace(i, 1, rule1);
-            i += rule1.length() - 1;
+        for (int j = 0; j < ruleset.size(); j++) {
+            if (ch.compare(ruleset[j].lhs) == 0){
+                generatedRule.replace(i, 1, ruleset[j].rhs);
+                i += ruleset[j].rhs.length() - 1;
+            }
         }
-        else if (ch.compare("X") == 0){
-            std::string rule2 = "F-[[X]+X]+F[+FX]-X";
-            rule.replace(i, 1, rule2);
-            i += rule2.length() - 1;
-        }
-        
     }
 }
 
@@ -108,7 +136,7 @@ void LSystem::render()
 {
     glUseProgram(shader);
     
-    glm::vec3 color(0.0f, 1.0f, 0.0f);
+    glm::vec3 color(0.0f, 100.0f / 255.0f, 0.0f);
     GLuint modelLoc = glGetUniformLocation(shader, "model");
     GLuint colorLoc = glGetUniformLocation(shader, "color");
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));

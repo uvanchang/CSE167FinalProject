@@ -2,6 +2,7 @@
 #define _TERRAIN_H_
 
 #ifdef __APPLE__
+#define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl3.h>
 #else
 #include <GL/glew.h>
@@ -29,7 +30,7 @@ protected:
 	GLuint shader;
     GLuint textureId;
 	GLuint vao;
-    GLuint vbos[2];
+    GLuint vbos[3];
 public:
 	Terrain(int n, GLuint shader);
 	~Terrain();

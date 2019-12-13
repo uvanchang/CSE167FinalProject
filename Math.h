@@ -61,8 +61,9 @@ public:
 			return glm::vec2(x0, y0) + tangentVector;
 	}
 
+    // Checks if boundary of one sphere is within the boundary of another
 	static bool isInsideSphere(glm::vec3 point, double radius, glm::vec3 origin) {
-		return euclideanDistance(point - origin) < radius; 
+		return euclideanDistance(point - origin) < 2 * radius;
 	}
 };
 

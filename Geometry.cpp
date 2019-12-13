@@ -7,7 +7,7 @@
 
 #pragma warning(disable : 4996)
 
-void Geometry::parseOBJ(std::string objFilename) {
+void Geometry::parseOBJ(std::string objFilename, bool noTex) {
 	FILE* file = fopen(objFilename.c_str(), "r");
 	if (file == NULL) {
 		printf("Cannot open %s\n", objFilename.c_str());
@@ -45,19 +45,29 @@ void Geometry::parseOBJ(std::string objFilename) {
             glm::ivec3 vertexInd;
             glm::ivec3 normalInd;
             glm::ivec3 textureInd;
-            fscanf(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n",
-                   &vertexInd.x, &textureInd.x, &normalInd.x,
-                   &vertexInd.y, &textureInd.y, &normalInd.y,
-                   &vertexInd.z, &textureInd.z, &normalInd.z);
+            if (noTex) {
+                fscanf(file, "%d//%d %d//%d %d//%d\n",
+                       &vertexInd.x, &normalInd.x,
+                       &vertexInd.y, &normalInd.y,
+                       &vertexInd.z, &normalInd.z);
+            } else {
+                fscanf(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n",
+                       &vertexInd.x, &textureInd.x, &normalInd.x,
+                       &vertexInd.y, &textureInd.y, &normalInd.y,
+                       &vertexInd.z, &textureInd.z, &normalInd.z);
+            }
+            
             vertex_indices.push_back(--vertexInd.x);
             vertex_indices.push_back(--vertexInd.y);
             vertex_indices.push_back(--vertexInd.z);
             normal_indices.push_back(--normalInd.x);
             normal_indices.push_back(--normalInd.y);
             normal_indices.push_back(--normalInd.z);
-            texture_indices.push_back(--textureInd.x);
-            texture_indices.push_back(--textureInd.y);
-            texture_indices.push_back(--textureInd.z);
+            if (!noTex) {
+                texture_indices.push_back(--textureInd.x);
+                texture_indices.push_back(--textureInd.y);
+                texture_indices.push_back(--textureInd.z);
+            }
         }
         else {
             // Ignore other cases
@@ -76,10 +86,10 @@ void Geometry::parseOBJ(std::string objFilename) {
     fclose(file);
 }
 
-Geometry::Geometry(std::string objFilename, GLuint shader)
-	: program(shader)
+Geometry::Geometry(std::string objFilename, GLuint shader, bool noTex)
+	: program(shader), noTex(noTex)
 {
-	parseOBJ(objFilename);
+	parseOBJ(objFilename, noTex);
 
 	// Calculate the maximum coordinate values along each (x,y,z) axis
 	float maxX = -FLT_MAX, maxY = -FLT_MAX, maxZ = -FLT_MAX;
@@ -114,11 +124,6 @@ Geometry::Geometry(std::string objFilename, GLuint shader)
 	material.diffuse = glm::vec3(1.0f, 0.5f, 0.31f);
 	material.specular = glm::vec3(0.5f, 0.5f, 0.5f);
 	material.shininess = 32.0f;
-    
-//    material.ambient = glm::vec3(0.24725f, 0.1995f, 0.0745f);
-//    material.diffuse = glm::vec3(0.75164f, 0.60648f, 0.22648f);
-//    material.specular = glm::vec3(0.628281f, 0.555802f, 0.366065f);
-//    material.shininess = 0.4f;
 }
 
 Geometry::~Geometry() {
@@ -147,12 +152,15 @@ void Geometry::render() {
     glUniform3fv(specularLoc, 1, glm::value_ptr(material.specular));
     glUniform1f(shininessLoc, material.shininess);
 
-	// Bind to the VAO.
-	glBindVertexArray(vao);
-    glBindTexture(GL_TEXTURE_2D, textureId);
+    // Bind to the VAO.
+    glBindVertexArray(vao);
 	
-	// Draw points 
-    glDrawArrays(GL_TRIANGLES, 0, points.size() * 3);
+    if (!noTex) { // if star
+        // Draw points
+        glDrawArrays(GL_TRIANGLES, 0, points.size() * 3);
+    } else {      // if bounding sphere
+        glDrawArrays(GL_LINE_STRIP, 0, points.size() * 3);
+    }
 	// Unbind from the VAO.
 	glBindVertexArray(0);
 }
@@ -180,13 +188,15 @@ void Geometry::update() {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
     
-    glBindBuffer(GL_ARRAY_BUFFER, vbos[1]);
-    // Pass in the data.
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * textures.size(), textures.data(), GL_STATIC_DRAW);
-    // Enable vertex attribute 1. (Connect to shader)
-    // We will be able to access normals through it.
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
+    if (!noTex) {
+        glBindBuffer(GL_ARRAY_BUFFER, vbos[1]);
+        // Pass in the data.
+        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * textures.size(), textures.data(), GL_STATIC_DRAW);
+        // Enable vertex attribute 1. (Connect to shader)
+        // We will be able to access normals through it.
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
+    }
     
     glBindBuffer(GL_ARRAY_BUFFER, vbos[2]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * normals.size(), normals.data(), GL_STATIC_DRAW);

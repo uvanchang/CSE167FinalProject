@@ -2,6 +2,7 @@
 #define _GEOMETRY_H_
 
 #ifdef __APPLE__
+#define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl3.h>
 #else
 #include <GL/glew.h>
@@ -29,7 +30,7 @@ protected:
 	glm::mat4 model;
 	Material material;
 	glm::vec3 color;
-	int useColor;
+	int useColor = 0;
 	std::vector<glm::vec3> points;
 	std::vector<glm::vec3> normals;
 	std::vector<glm::vec2> textures;
@@ -40,11 +41,12 @@ protected:
 	GLuint vbos [3];
 	int toRender = 1;
 	std::vector<glm::vec3> offsets;
+    bool noTex;
 public:
-	Geometry(std::string objFilename, GLuint shader);
+	Geometry(std::string objFilename, GLuint shader, bool noTex = false);
 	~Geometry();
 
-	void parseOBJ(std::string objFilename);
+	void parseOBJ(std::string objFilename, bool noTex);
 
 	void render();
 	void draw(glm::mat4 C);

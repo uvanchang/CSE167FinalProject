@@ -20,6 +20,8 @@ void setup_callbacks(GLFWwindow* window)
 	glfwSetScrollCallback(window, Window::mouseScrollCallback);
 	// Set the window resize callback.
 	glfwSetWindowSizeCallback(window, Window::resizeCallback);
+    // Disable cursor
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
 void setup_opengl_settings()
@@ -58,6 +60,8 @@ int main(void)
 	print_versions();
 	// Setup callbacks.
 	setup_callbacks(window);
+    // Fullscreen window.
+    glfwMaximizeWindow(window);
 	// Setup OpenGL settings.
 	setup_opengl_settings();
 	// Initialize the shader program; exit if initialization fails.
@@ -72,7 +76,7 @@ int main(void)
 		Window::displayCallback(window);
 
 		// Idle callback. Updating objects, etc. can be done here.
-		Window::idleCallback();
+		Window::idleCallback(window);
 	}
 
 	Window::cleanUp();

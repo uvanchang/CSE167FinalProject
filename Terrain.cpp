@@ -67,7 +67,7 @@ Terrain::Terrain(int n, GLuint shader)
 
 	// Generate a vertex array (VAO) and a vertex buffer objects (VBO).
 	glGenVertexArrays(1, &vao);
-	glGenBuffers(2, vbos);
+	glGenBuffers(3, vbos);
 
 	// Bind to the VAO.
 	glBindVertexArray(vao);
@@ -85,9 +85,14 @@ Terrain::Terrain(int n, GLuint shader)
     // Pass in the data.
     glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * textures.size(), textures.data(), GL_STATIC_DRAW);
     // Enable vertex attribute 1. (Connect to shader)
-    // We will be able to access normals through it.
+    // We will be able to access textures through it.
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, vbos[2]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * normals.size(), normals.data(), GL_STATIC_DRAW);
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
 
 	// Unbind from the VBO.
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -99,7 +104,7 @@ Terrain::Terrain(int n, GLuint shader)
 
 Terrain::~Terrain() {
     // Delete the VBO and the VAO.
-    glDeleteBuffers(2, vbos);
+    glDeleteBuffers(3, vbos);
     glDeleteVertexArrays(1, &vao);
 }
 
@@ -189,11 +194,18 @@ void Terrain::render() {
 
 float Terrain::getTerrainHeight(float x, float z) {
     
-    float terrainX = x + scale * terrain.size() / 2.0f;
+    float terrainX = x + scale * terrain.size() / 2.0f; // Center terrain coordinates around (0,0)
     float terrainZ = z + scale * terrain.size() / 2.0f;
     
-    float scaleX = terrainX / scale + 0.001;
-    float scaleZ = terrainZ / scale - 0.001;
+    float scaleX = terrainX / scale; // Scale back down
+    float scaleZ = terrainZ / scale;
+    
+    if (floor(scaleX) == ceil(scaleX)) { // Offsets to avoid zero determinant (when floor == ceil)
+        scaleX = scaleX == 0 ? scaleX + 0.5 : scaleX - 0.5;
+    }
+    if (floor(scaleZ) == ceil(scaleZ)) {
+        scaleZ = scaleZ == 0 ? scaleZ + 0.5 : scaleZ - 0.5;
+    }
     
     float row = ceil(scaleZ) -  scaleZ;
     float col = scaleX - floor(scaleX);

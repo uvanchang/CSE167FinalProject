@@ -3,6 +3,7 @@
 
 #ifdef __APPLE__
 #define GLFW_INCLUDE_GLCOREARB
+#define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl3.h>
 #else
 #define _USE_MATH_DEFINES
@@ -22,6 +23,7 @@
 #include <memory>
 
 #include <stdlib.h>
+#include <unordered_set>a
 
 #include "shader.h"
 #include "texture.h"
@@ -35,6 +37,7 @@
 #include "Terrain.h"
 #include "texture.h"
 #include "LSystem.h"
+#include "WinScreen.h"
 
 struct Light {
     glm::vec3 position;
@@ -59,26 +62,34 @@ public:
 	static std::string windowTitle;
 	static Skybox* skybox;
     static Transform* world;
+    static Transform* fps;
+    static Geometry* personSphere;
 	static std::vector<Geometry*> stars;
 	static std::vector<Geometry*> spheres;
 	static Terrain* terrain;
     static std::vector<LSystem*> trees;
+    static WinScreen* winScreen;
     static std::vector<float> radiuses;
 	static std::vector<glm::vec3> origins;
+    static std::unordered_set<int> deletedSpheres;
 	static glm::mat4 projection;
 	static glm::mat4 view;
 	static glm::vec3 eye, center, up;
+    static bool birdsEye;
 	static GLuint skyboxShader, skybox_projectionLoc, skybox_viewLoc;
 	static GLuint objectShader, object_projectionLoc, object_viewLoc, object_cameraPosLoc, object_reflectionLoc;
     static GLuint terrainShader, terrain_projectionLoc, terrain_viewLoc;
     static GLuint lightAmbientLoc, lightDiffuseLoc, lightSpecularLoc, lightPosLoc, lightDirLoc, lightLinearLoc;
     static GLuint plantShader, plant_projectionLoc, plant_viewLoc;
+    static GLuint winScreenShader, winScreen_projectionLoc, winScreen_viewLoc;
     static int renderSpheres;
 	static glm::vec3 cursor;
 	static glm::vec3 pressedPos;
 	static bool pressed;
 	static int mode;
     static Light light;
+    static int score;
+    static int totalStars;
 
 	static bool initializeProgram();
 	static bool initializeObjects();
@@ -86,7 +97,7 @@ public:
 	static GLFWwindow* createWindow(int width, int height);
 	static glm::vec3 trackBallMapping(glm::vec2 point);
 	static void resizeCallback(GLFWwindow* window, int width, int height);
-	static void idleCallback();
+	static void idleCallback(GLFWwindow* window);
 	static void displayCallback(GLFWwindow*);
 	static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 	static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);

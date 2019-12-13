@@ -39,7 +39,7 @@ void Transform::draw(glm::mat4 C)
 void Transform::update() 
 {
     if (id == 1) {
-        transformMatrix = glm::rotate(transformMatrix, 0.001f, glm::vec3(0.0f, 0.0f, 1.0f));
+        transformMatrix = glm::rotate(transformMatrix, 0.01f, glm::vec3(0.0f, 0.0f, 1.0f));
     }
     for (Node* child : children) {
         child->update();

@@ -1,9 +1,8 @@
 #ifndef _LSYSTEM_H
 #define _LSYSTEM_H
 
-#define GL_SILENCE_DEPRECATION
-
 #ifdef __APPLE__
+#define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl3.h>
 #else
 #include <GL/glew.h>
@@ -28,30 +27,40 @@ struct Branch
     glm::vec3 angle;
 };
 
+struct Rule
+{
+    std::string lhs;
+    std::string rhs;
+};
+
 class LSystem
 {
 private:
     std::vector<glm::vec3> points;
-    float angle, length;
-    int depth;
-    std::string rule;
+    std::vector<float> angles;
+    float length;
+    std::vector<Rule> ruleset;
+    std::string generatedRule;
     std::vector<Branch> stack;
     Branch currBranch;
     GLuint shader;
     GLuint vao, vbo;
     glm::mat4 model;
-    Material material;
     float branchLength = 0.05f;
     
     std::vector<Branch> tree;
 public:
-    LSystem(glm::vec3 rootPos, float angle, int iterations, GLuint shader);
+    LSystem(glm::vec3 rootPos, std::vector<float> angles, std::string axiom, std::vector<Rule> ruleset, int iterations, GLuint shader);
     LSystem(float angle);
     ~LSystem();
     void push(Branch b);
     void pop();
-    void rotL();
-    void rotR();
+    void rotateXL();
+    void rotateXR();
+    void rotateYL();
+    void rotateYR();
+    void rotateZL();
+    void rotateZR();
     void moveForward();
     void genRule();
     void display();
